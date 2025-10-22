@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import redis_client, mongodb_client
 from config import settings
-from routes import tickets, bookings, users, payments
+# from routes import tickets, bookings, users, payments
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,11 +30,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routes
-app.include_router(users.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
-app.include_router(tickets.router, prefix=f"{settings.API_V1_STR}/tickets", tags=["Tickets"])
-app.include_router(bookings.router, prefix=f"{settings.API_V1_STR}/bookings", tags=["Bookings"])
-app.include_router(payments.router, prefix=f"{settings.API_V1_STR}/payments", tags=["Payments"])
 
 @app.get("/")
 async def root():

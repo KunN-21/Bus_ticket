@@ -1,0 +1,135 @@
+.ticket-card-modern {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.ticket-card-modern:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #f5576c;
+}
+
+.ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px dashed #e0e0e0;
+}
+
+.route-info h3 {
+  font-size: 1.3rem;
+  color: #2c3e50;
+  margin: 0.5rem 0;
+}
+
+.bus-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.ticket-price {
+  text-align: right;
+}
+
+.price-amount {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #f5576c;
+}
+
+.ticket-body {
+  margin-bottom: 1.5rem;
+}
+
+.time-section {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+}
+
+.time-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.time-item svg {
+  color: #f5576c;
+}
+
+.time-label {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.time-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.time-divider {
+  font-size: 1.5rem;
+  color: #f5576c;
+  font-weight: bold;
+}
+
+.ticket-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #7f8c8d;
+  font-size: 0.95rem;
+}
+
+.detail-item svg {
+  color: #f5576c;
+}
+
+.seats-available {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.ticket-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-book-now {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-book-now:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+}

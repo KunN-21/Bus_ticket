@@ -11,3 +11,5 @@ passlib[bcrypt]
 python-jose[cryptography]==3.3.0
 qrcode[pil]==7.4.2
 Pillow
+pymongo[srv]
+certifi

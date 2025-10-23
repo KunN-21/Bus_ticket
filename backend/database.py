@@ -1,6 +1,7 @@
 import redis.asyncio as redis
-from motor.motor_asyncio import AsyncIOMotorClient
 from config import settings
+from motor.motor_asyncio import AsyncIOMotorClient
+import certifi
 
 # Redis Connection
 class RedisClient:
@@ -34,7 +35,10 @@ class MongoDBClient:
         self.db = None
     
     async def connect(self):
-        self.client = AsyncIOMotorClient(settings.MONGO_URL)
+        self.client = AsyncIOMotorClient(
+            settings.MONGO_URL,
+            tlsCAFile=certifi.where()
+        )
         self.db = self.client[settings.MONGO_DB]
         # Test connection
         await self.client.admin.command('ping')

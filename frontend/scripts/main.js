@@ -185,8 +185,105 @@ function formatDate(dateString) {
 }
 
 // ==================== LOGIN MODAL ====================
-function openLoginModal() {
-    alert('🔐 ĐĂNG NHẬP / ĐĂNG KÝ\n\nChức năng đăng nhập sẽ được phát triển trong phiên bản tiếp theo.');
+// Open authentication modal (show login by default)
+function openLoginModal(tab = 'login') {
+    const section = document.getElementById('authSection');
+    if (!section) return alert('Khu vực đăng nhập chưa sẵn sàng');
+    section.classList.add('visible');
+    section.setAttribute('aria-hidden','false');
+    // switch tab and scroll into view
+    switchAuthTab(tab);
+    setTimeout(()=> section.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+}
+
+function closeAuthModal() {
+    const section = document.getElementById('authSection');
+    if (!section) return;
+    section.classList.remove('visible');
+    section.setAttribute('aria-hidden','true');
+}
+
+function switchAuthTab(tabName){
+    const tabs = document.querySelectorAll('.auth-tabs .tab');
+    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab === tabName));
+
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    if (loginForm && registerForm){
+        if (tabName === 'register'){
+            loginForm.classList.remove('active');
+            registerForm.classList.add('active');
+        } else {
+            registerForm.classList.remove('active');
+            loginForm.classList.add('active');
+        }
+    }
+}
+
+// Toggle password visibility helper
+function togglePassword(inputId){
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+// Submit handlers (calls backend endpoints)
+async function handleLoginSubmit(e){
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password){
+        return alert('Vui lòng nhập email và mật khẩu');
+    }
+
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({email, password})
+        });
+        const data = await res.json();
+        if (!res.ok){
+            throw new Error(data.message || 'Đăng nhập thất bại');
+        }
+        // store token if provided
+        if (data.token) localStorage.setItem('authToken', data.token);
+        alert('Đăng nhập thành công');
+        // if on standalone auth page, optionally redirect
+        if (window.location.pathname.endsWith('/auth.html') || window.location.pathname.endsWith('auth.html')){
+            window.location.href = 'index.html';
+        } else {
+            closeAuthModal();
+        }
+    } catch(err){
+        console.error(err);
+        alert(err.message || 'Lỗi khi đăng nhập');
+    }
+}
+
+async function handleRegisterSubmit(e){
+    e.preventDefault();
+    const email = document.getElementById('regEmail').value.trim();
+    if (!email){
+        return alert('Vui lòng nhập email đăng ký');
+    }
+
+    try {
+        const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({email})
+        });
+        const data = await res.json();
+        if (!res.ok){
+            throw new Error(data.message || 'Đăng ký thất bại');
+        }
+        alert('Đăng ký thành công. Kiểm tra email để hoàn tất.');
+        switchAuthTab('login');
+    } catch(err){
+        console.error(err);
+        alert(err.message || 'Lỗi khi đăng ký');
+    }
 }
 
 // ==================== SMOOTH SCROLL ====================
@@ -249,3 +346,32 @@ console.log('%cProfessional Transport Services', 'color: #333; font-size: 14px; 
 console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: #999;');
 console.log('%cDeveloped by NoSQL Team 💻', 'color: #666; font-size: 11px;');
 console.log('%cVersion: 1.0.0 | 2025', 'color: #999; font-size: 10px;');
+
+// ==================== AUTH MODAL WIRING ====================
+document.addEventListener('DOMContentLoaded', () => {
+    const authSection = document.getElementById('authSection');
+    const authClose = document.getElementById('authClose');
+    const tabs = document.querySelectorAll('.auth-tabs .tab');
+    const toggleLoginPwd = document.getElementById('toggleLoginPwd');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+
+    if (authClose) authClose.addEventListener('click', closeAuthModal);
+
+    tabs.forEach(t => t.addEventListener('click', (e) => {
+        const tab = e.currentTarget.dataset.tab;
+        switchAuthTab(tab);
+        // keep visible when switching tabs
+        if (authSection && !authSection.classList.contains('visible')) authSection.classList.add('visible');
+    }));
+
+    if (toggleLoginPwd) toggleLoginPwd.addEventListener('click', () => togglePassword('loginPassword'));
+
+    if (loginForm) loginForm.addEventListener('submit', handleLoginSubmit);
+    if (registerForm) registerForm.addEventListener('submit', handleRegisterSubmit);
+
+    // close on ESC
+    document.addEventListener('keydown', (e)=>{
+        if (e.key === 'Escape') closeAuthModal();
+    });
+});

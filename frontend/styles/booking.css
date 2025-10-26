@@ -1,0 +1,343 @@
+/* ==================== BOOKING CARD ==================== */
+.booking-card {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(255, 102, 0, 0.08), 0 0 0 1px rgba(255, 102, 0, 0.15);
+    padding: 35px 40px;
+    border: 1.5px solid rgba(255, 102, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.booking-card:hover {
+    box-shadow: 0 8px 30px rgba(255, 102, 0, 0.12), 0 0 25px rgba(255, 102, 0, 0.15);
+    border-color: rgba(255, 102, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Trip Type */
+.trip-type-wrapper {
+    margin-bottom: 30px;
+}
+
+.trip-type {
+    display: flex;
+    gap: 30px;
+}
+
+.trip-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--text-dark);
+    user-select: none;
+    transition: var(--transition);
+}
+
+.trip-option:hover {
+    color: var(--futa-orange);
+}
+
+.trip-option input[type="radio"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition);
+}
+
+.trip-option input[type="radio"]:hover {
+    border-color: var(--futa-orange-light);
+}
+
+.trip-option input[type="radio"]:checked {
+    border-color: var(--futa-orange);
+    background: white;
+}
+
+.trip-option input[type="radio"]:checked::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--futa-orange);
+}
+
+.trip-option.active {
+    color: var(--futa-orange);
+    font-weight: 600;
+}
+
+/* Booking Form */
+.booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 2fr auto 2fr 1.5fr 1fr;
+    gap: 15px;
+    align-items: end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+
+.form-select,
+.form-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    background: white;
+    transition: var(--transition);
+}
+
+.form-select:hover,
+.form-input:hover {
+    border-color: var(--futa-orange-light);
+}
+
+.form-select:focus,
+.form-input:focus {
+    border-color: var(--futa-orange);
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+}
+
+/* Select Dropdown */
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23FF6600' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 18px;
+    padding-right: 40px;
+    cursor: pointer;
+}
+
+/* Swap Button */
+.swap-btn {
+    width: 50px;
+    height: 50px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    align-self: flex-end;
+    margin-bottom: 0;
+    cursor: pointer;
+    padding: 0;
+}
+
+.swap-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.swap-btn:hover {
+    transform: rotate(180deg) scale(1.05);
+}
+
+.swap-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Return Date (Hidden by default) */
+.return-date-group {
+    display: none;
+}
+
+.return-date-group.active {
+    display: flex;
+}
+
+/* When round-trip is active, adjust grid for 6 columns */
+.booking-form:has(.return-date-group.active) .form-grid {
+    grid-template-columns: 1.8fr auto 1.8fr 1.2fr 1.2fr 0.8fr;
+}
+
+/* Make ticket select smaller in round-trip mode */
+.booking-form:has(.return-date-group.active) .form-group:last-child {
+    min-width: 80px;
+}
+
+.booking-form:has(.return-date-group.active) .form-group:last-child .form-select {
+    padding-left: 10px;
+    padding-right: 32px;
+    background-position: right 6px center;
+    background-size: 16px;
+}
+
+/* Search Button */
+.btn-search {
+    width: auto;
+    max-width: 280px;
+    margin: 10px auto 0 auto;
+    padding: 14px 45px;
+    background: linear-gradient(135deg, #FF6B2C 0%, #F87438 100%);
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 999px;
+    box-shadow: 0 6px 20px rgba(255, 107, 44, 0.35);
+    text-transform: none;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+    display: block;
+    text-align: center;
+}
+
+.btn-search:hover {
+    background: linear-gradient(135deg, #F87438 0%, #FF6B2C 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255, 107, 44, 0.45);
+}
+
+.btn-search:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(255, 107, 44, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    /* One-way: Stack in 2 rows */
+    .form-grid {
+        grid-template-columns: 2fr auto 2fr;
+        gap: 12px;
+    }
+    
+    .form-group:nth-child(4),
+    .form-group:nth-child(6) {
+        grid-column: span 1;
+    }
+    
+    .form-group:nth-child(4) {
+        grid-column: 1 / 3;
+    }
+    
+    .form-group:nth-child(6) {
+        grid-column: 3 / 4;
+    }
+    
+    /* Round-trip: Stack in 2 rows */
+    .booking-form:has(.return-date-group.active) .form-grid {
+        grid-template-columns: 2fr auto 2fr 1.5fr 1fr;
+    }
+    
+    .booking-form:has(.return-date-group.active) .form-group:nth-child(4) {
+        grid-column: 1 / 2;
+    }
+    
+    .booking-form:has(.return-date-group.active) .form-group:nth-child(5) {
+        grid-column: 2 / 4;
+    }
+    
+    .booking-form:has(.return-date-group.active) .form-group:nth-child(6) {
+        grid-column: 4 / 5;
+    }
+}
+
+@media (max-width: 1024px) {
+    .form-grid {
+        grid-template-columns: 1fr auto 1fr;
+        gap: 12px;
+    }
+    
+    .form-group:nth-child(4),
+    .form-group:nth-child(6) {
+        grid-column: 1 / -1;
+    }
+    
+    .booking-form:has(.return-date-group.active) .form-grid {
+        grid-template-columns: 1fr auto 1fr;
+    }
+    
+    .booking-form:has(.return-date-group.active) .form-group:nth-child(4),
+    .booking-form:has(.return-date-group.active) .form-group:nth-child(5),
+    .booking-form:has(.return-date-group.active) .form-group:nth-child(6) {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .booking-card {
+        padding: 20px 15px;
+    }
+    
+    .trip-type {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .trip-option {
+        flex: 1;
+        justify-content: center;
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .swap-btn {
+        display: none;
+    }
+    
+    .form-group {
+        grid-column: 1 !important;
+    }
+    
+    .btn-search {
+        font-size: 1rem;
+        padding: 14px 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .booking-card {
+        padding: 15px 10px;
+        border-radius: var(--radius-lg);
+    }
+    
+    .trip-option {
+        font-size: 0.85rem;
+        padding: 8px 12px;
+    }
+    
+    .form-select,
+    .form-input {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+}

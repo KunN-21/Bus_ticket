@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VooBus Lines - Vé Xe Chất Lượng Cao</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/header.css">
+    <link rel="stylesheet" href="styles/intro.css">
+    <link rel="stylesheet" href="styles/hero.css">
+    <link rel="stylesheet" href="styles/booking.css">
+    <link rel="stylesheet" href="styles/sections.css">
+    <link rel="stylesheet" href="styles/footer.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <!-- Logo -->
+                <a href="index.html" class="logo">
+                    <div class="logo-text">
+                        <span class="logo-brand">VOOBUS</span>
+                    </div>
+                </a>
+
+                <!-- Navigation -->
+                <nav class="nav-menu">
+                    <a href="index.html" class="nav-link active">Trang chủ</a>
+                    <a href="#schedule" class="nav-link">Lịch trình</a>
+                    <a href="#lookup" class="nav-link">Tra cứu vé</a>
+                    <a href="#invoice" class="nav-link">Hóa đơn</a>
+                    <a href="#about" class="nav-link">Về chúng tôi</a>
+                </nav>
+
+                <!-- Right Actions -->
+                <div class="header-actions">
+                    <button class="btn-language">
+                        <img src="https://futabus.vn/images/icons/vietnam.svg" alt="VI" width="20">
+                        VI
+                    </button>
+                    <button class="btn-login" onclick="openLoginModal()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        Đăng nhập/Đăng ký
+                    </button>
+                </div>
+
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Intro Banner -->
+    <section class="intro-banner">
+        <div class="container">
+            <div class="intro-image">
+                <img src="images/bus-banner.jpg" alt="Bus Banner">
+            </div>
+        </div>
+    </section>
+
+    <!-- Hero Banner with Booking Form -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content">
+                <!-- Booking Card -->
+                <div class="booking-card">
+                    <!-- Trip Type Toggle -->
+                    <div class="trip-type-wrapper">
+                        <div class="trip-type">
+                            <label class="trip-option active">
+                                <input type="radio" name="tripType" value="one-way" checked>
+                                <span>Một chiều</span>
+                            </label>
+                            <label class="trip-option">
+                                <input type="radio" name="tripType" value="round-trip">
+                                <span>Khứ hồi</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Booking Form -->
+                    <form class="booking-form" id="bookingForm" onsubmit="searchTickets(event)">
+                        <div class="form-grid">
+                            <!-- From Location -->
+                            <div class="form-group">
+                                <label>Điểm đi</label>
+                                <select id="from" class="form-select" required>
+                                    <option value="">Chọn điểm đi</option>
+                                    <option value="hcm" selected>TP. Hồ Chí Minh</option>
+                                    <option value="dalat">Đà Lạt</option>
+                                    <option value="danang">Đà Nẵng</option>
+                                    <option value="nhatrang">Nha Trang</option>
+                                    <option value="cantho">Cần Thơ</option>
+                                    <option value="vungtau">Vũng Tàu</option>
+                                    <option value="hanoi">Hà Nội</option>
+                                </select>
+                            </div>
+
+                            <!-- Swap Button -->
+                            <button type="button" class="swap-btn" onclick="swapLocations()">
+                                <img src="images/switch_location.jpg" alt="Swap">
+                            </button>
+
+                            <!-- To Location -->
+                            <div class="form-group">
+                                <label>Điểm đến</label>
+                                <select id="to" class="form-select" required>
+                                    <option value="">Chọn điểm đến</option>
+                                    <option value="hcm">TP. Hồ Chí Minh</option>
+                                    <option value="dalat" selected>Đà Lạt</option>
+                                    <option value="danang">Đà Nẵng</option>
+                                    <option value="nhatrang">Nha Trang</option>
+                                    <option value="cantho">Cần Thơ</option>
+                                    <option value="vungtau">Vũng Tàu</option>
+                                    <option value="hanoi">Hà Nội</option>
+                                </select>
+                            </div>
+
+                            <!-- Depart Date -->
+                            <div class="form-group">
+                                <label>Ngày đi</label>
+                                <input type="date" id="depart-date" class="form-input" required>
+                            </div>
+
+                            <!-- Return Date (Hidden by default) -->
+                            <div class="form-group return-date-group">
+                                <label>Ngày về</label>
+                                <input type="date" id="return-date" class="form-input">
+                            </div>
+
+                            <!-- Number of Tickets -->
+                            <div class="form-group">
+                                <label>Số vé</label>
+                                <select id="tickets" class="form-select" required>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Search Button -->
+                        <button type="submit" class="btn-search">
+                            Tìm chuyến xe
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Popular Routes Section -->
+    <section class="routes-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">TUYẾN PHỔ BIẾN</h2>
+                <p class="section-subtitle">Được khách hàng tin tưởng và lựa chọn</p>
+            </div>
+
+            <div class="routes-grid">
+                <!-- Route 1: TP.HCM -->
+                <div class="route-card">
+                    <div class="route-image">
+                        <img src="https://cdn.futabus.vn/futa-busline-cms-dev/Rectangle_23_2_8bf6ed1d78/Rectangle_23_2_8bf6ed1d78.png" alt="TP.HCM">
+                    </div>
+                    <div class="route-content">
+                        <h3 class="route-title">Tuyến xe từ <strong>TP. Hồ Chí Minh</strong></h3>
+                        <div class="route-destinations">
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <p class="destination">Đà Lạt</p>
+                                    <p class="details">310km - 11 giờ</p>
+                                </div>
+                                <p class="price">350.000đ</p>
+                            </div>
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <p class="destination">Cần Thơ</p>
+                                    <p class="details">167km - 4 giờ 30 phút</p>
+                                </div>
+                                <p class="price">0đ</p>
+                            </div>
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <p class="destination">Long Xuyên</p>
+                                    <p class="details">186km - 5 giờ</p>
+                                </div>
+                                <p class="price">200.000đ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Route 2: Đà Lạt -->
+                <div class="route-card">
+                    <div class="route-image">
+                        <img src="https://cdn.futabus.vn/futa-busline-cms-dev/Rectangle_23_3_2d8ce855bc/Rectangle_23_3_2d8ce855bc.png" alt="Đà Lạt">
+                    </div>
+                    <div class="route-content">
+                        <h3 class="route-title">Tuyến xe từ <strong>Đà Lạt</strong></h3>
+                        <div class="route-destinations">
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <p class="destination">TP.Hồ Chí Minh</p>
+                                    <p class="details">293km - 8 giờ</p>
+                                </div>
+                                <p class="price">300.000đ</p>
+                            </div>
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <p class="destination">Đà Nẵng</p>
+                                    <p class="details">757km - 17 giờ</p>
+                                </div>
+                                <p class="price">800.000đ</p>
+                            </div>
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <p class="destination">Cần Thơ</p>
+                                    <p class="details">457km - 11 giờ</p>
+                                </div>
+                                <p class="price">500.000đ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Route 3: Đà Nẵng -->
+                <div class="route-card">
+                    <div class="route-image">
+                        <img src="https://cdn.futabus.vn/futa-busline-cms-dev/Rectangle_23_4_061f4249f6/Rectangle_23_4_061f4249f6.png" alt="Đà Nẵng">
+                    </div>
+                    <div class="route-content">
+                        <h3 class="route-title">Tuyến xe từ <strong>Đà Nẵng</strong></h3>
+                        <div class="route-destinations">
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <p class="destination">Đà Lạt</p>
+                                    <p class="details">666km - 17 giờ</p>
+                                </div>
+                                <p class="price">700.000đ</p>
+                            </div>
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <p class="destination">TP.Hồ Chí Minh</p>
+                                    <p class="details">850km - 23 giờ</p>
+                                </div>
+                                <p class="price">900.000đ</p>
+                            </div>
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <p class="destination">Nha Trang</p>
+                                    <p class="details">543km - 12 giờ</p>
+                                </div>
+                                <p class="price">500.000đ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quality Section -->
+    <section class="quality-section">
+        <div class="container">
+            <h2 class="section-title">VÌ SAO NÊN CHỌN CHÚNG TÔI</h2>
+            <p class="section-subtitle">Dịch vụ vận chuyển chất lượng cao được khách hàng tin tưởng</p>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 class="stat-number">40M+</h3>
+                    <p class="stat-label">Khách hàng hài lòng</p>
+                    <p class="stat-desc">Phục vụ hơn 40 triệu lượt khách mỗi năm với chất lượng dịch vụ tốt nhất</p>
+                </div>
+                <div class="stat-card">
+                    <h3 class="stat-number">350+</h3>
+                    <p class="stat-label">Chi nhánh toàn quốc</p>
+                    <p class="stat-desc">Mạng lưới rộng khắp với hơn 350 phòng vé và điểm trung chuyển</p>
+                </div>
+                <div class="stat-card">
+                    <h3 class="stat-number">6,500+</h3>
+                    <p class="stat-label">Chuyến xe mỗi ngày</p>
+                    <p class="stat-desc">Phục vụ hàng nghìn chuyến xe đường dài và liên tỉnh mỗi ngày</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <!-- Column 1: Company Info -->
+                <div class="footer-column">
+                    <h3>CÔNG TY VOOBUS</h3>
+                    <p><strong>Dịch Vụ Vận Chuyển Chuyên Nghiệp</strong></p>
+                    <p>Địa chỉ: Cộng Hòa, TP. Hồ Chí Minh, Việt Nam</p>
+                    <p>Email: <a href="mailto:support@voobus.vn">support@voobus.vn</a></p>
+                    <p>Điện thoại: <a href="tel:02837123456">028 3712 3456</a></p>
+                    <p>Fax: <a href="tel:02838123457">028 7812 3857</a></p>
+                </div>
+
+                <!-- Column 2: Links -->
+                <div class="footer-column">
+                    <h4>Về Chúng Tôi</h4>
+                    <ul class="footer-links">
+                        <li><a href="#about">Giới thiệu công ty</a></li>
+                        <li><a href="#terms">Điều khoản sử dụng</a></li>
+                        <li><a href="#privacy">Chính sách bảo mật</a></li>
+                        <li><a href="#faq">Câu hỏi thường gặp</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Support -->
+                <div class="footer-column">
+                    <h4>Hỗ Trợ Khách Hàng</h4>
+                    <ul class="footer-links">
+                        <li><a href="#guide-web">Hướng dẫn đặt vé online</a></li>
+                        <li><a href="#guide-app">Hướng dẫn sử dụng App</a></li>
+                        <li><a href="#network">Mạng lưới chi nhánh</a></li>
+                        <li><a href="#recruitment">Tuyển dụng</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Social Media -->
+                <div class="footer-column">
+                    <h4>KẾT NỐI VỚI CHÚNG TÔI</h4>
+                    <div class="social-links">
+                        <a href="#" target="_blank">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="#1877f2">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                        </a>
+                        <a href="#" target="_blank">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="#ff0000">
+                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <p>© 2025 VOOBUS - Hệ Thống Đặt Vé Xe Khách. Bảo lưu mọi quyền.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="scripts/main.js"></script>
+</body>
+</html>

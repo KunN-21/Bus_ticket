@@ -29,17 +29,39 @@ class KhachHangBase(BaseModel):
     maKH: str
     hoTen: str
     SDT: str
+    email: str
+    CCCD: str
+    diaChi: str
 
 class KhachHangCreate(KhachHangBase):
     password: str
 
 class KhachHangLogin(BaseModel):
-    SDT: str
+    email: str
     password: str
 
 class KhachHangResponse(KhachHangBase):
     class Config:
         populate_by_name = True
+
+# ========== AUTH MODELS ==========
+class RegisterInitiate(BaseModel):
+    email: str
+
+class VerifyOTPRequest(BaseModel):
+    email: str
+    otp: str
+
+class SetPasswordRequest(BaseModel):
+    email: str
+    password: str
+
+class CompleteRegistrationRequest(BaseModel):
+    email: str
+    hoTen: str
+    SDT: str
+    CCCD: str
+    diaChi: str
 
 # ========== XE (Vehicle) ==========
 class XeBase(BaseModel):

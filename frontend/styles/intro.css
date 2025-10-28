@@ -1,0 +1,47 @@
+/* ==================== INTRO BANNER ==================== */
+.intro-banner {
+    padding: 20px 0 0 0;
+    background: white;
+    position: relative;
+    z-index: 1;
+}
+
+.intro-image {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 0 auto;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(10px);
+}
+
+.intro-image img {
+    width: 100%;
+    height: 260px;
+    display: block;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .intro-banner {
+        padding: 20px 0;
+    }
+    
+    .intro-image {
+        max-width: 100%;
+        border-radius: var(--radius-md);
+    }
+}
+
+@media (max-width: 480px) {
+    .intro-banner {
+        padding: 15px 0;
+    }
+    
+    .intro-image {
+        border-radius: var(--radius-sm);
+    }
+}

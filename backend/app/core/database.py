@@ -1,5 +1,5 @@
 import redis.asyncio as redis
-from config import settings
+from app.config import settings
 from motor.motor_asyncio import AsyncIOMotorClient
 import certifi
 

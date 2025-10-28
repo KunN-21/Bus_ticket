@@ -142,7 +142,7 @@ function searchTickets(event) {
     
     // Display errors or submit
     if (errors.length > 0) {
-        alert('LỖI:\n\n' + errors.join('\n'));
+        Toast.error(errors.join('\n'), 'Lỗi tìm kiếm');
     } else {
         // Success - would normally submit to backend
         const fromText = document.querySelector(`#from option[value="${from}"]`).text;
@@ -157,8 +157,7 @@ function searchTickets(event) {
             tripType
         });
         
-        let message = `✅ TÌM CHUYẾN XE THÀNH CÔNG!\n\n` +
-                     `🚌 Từ: ${fromText}\n` +
+        let message = `🚌 Từ: ${fromText}\n` +
                      `📍 Đến: ${toText}\n` +
                      `📅 Ngày đi: ${formatDate(departDate)}\n`;
         
@@ -168,7 +167,7 @@ function searchTickets(event) {
         
         message += `🎫 Số vé: ${tickets} vé`;
         
-        alert(message);
+        Toast.success(message, 'Tìm chuyến xe thành công!');
     }
 }
 
@@ -236,29 +235,8 @@ async function handleLoginSubmit(e){
         return alert('Vui lòng nhập email và mật khẩu');
     }
 
-    try {
-        const res = await fetch('/api/login', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({email, password})
-        });
-        const data = await res.json();
-        if (!res.ok){
-            throw new Error(data.message || 'Đăng nhập thất bại');
-        }
-        // store token if provided
-        if (data.token) localStorage.setItem('authToken', data.token);
-        alert('Đăng nhập thành công');
-        // if on standalone auth page, optionally redirect
-        if (window.location.pathname.endsWith('/auth.html') || window.location.pathname.endsWith('auth.html')){
-            window.location.href = 'index.html';
-        } else {
-            closeAuthModal();
-        }
-    } catch(err){
-        console.error(err);
-        alert(err.message || 'Lỗi khi đăng nhập');
-    }
+    // Login will be handled by auth.js on auth.html page
+    console.log('Login attempt:', email);
 }
 
 async function handleRegisterSubmit(e){
@@ -268,22 +246,8 @@ async function handleRegisterSubmit(e){
         return alert('Vui lòng nhập email đăng ký');
     }
 
-    try {
-        const res = await fetch('/api/register', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({email})
-        });
-        const data = await res.json();
-        if (!res.ok){
-            throw new Error(data.message || 'Đăng ký thất bại');
-        }
-        alert('Đăng ký thành công. Kiểm tra email để hoàn tất.');
-        switchAuthTab('login');
-    } catch(err){
-        console.error(err);
-        alert(err.message || 'Lỗi khi đăng ký');
-    }
+    // Register will be handled by auth.js on auth.html page
+    console.log('Register attempt:', email);
 }
 
 // ==================== SMOOTH SCROLL ====================
@@ -346,6 +310,125 @@ console.log('%cProfessional Transport Services', 'color: #333; font-size: 14px; 
 console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: #999;');
 console.log('%cDeveloped by NoSQL Team 💻', 'color: #666; font-size: 11px;');
 console.log('%cVersion: 1.0.0 | 2025', 'color: #999; font-size: 10px;');
+
+// ==================== USER ACCOUNT MANAGEMENT ====================
+// Check if user is logged in and update header
+function checkLoginStatus() {
+    const token = localStorage.getItem('access_token');
+    const userStr = localStorage.getItem('user');
+    
+    const btnLogin = document.getElementById('btnLogin');
+    const userAccount = document.getElementById('userAccount');
+    
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            
+            // Hide login button, show account dropdown
+            if (btnLogin) btnLogin.style.display = 'none';
+            if (userAccount) userAccount.style.display = 'block';
+            
+            // Update user info
+            const userName = document.getElementById('userName');
+            const dropdownUserName = document.getElementById('dropdownUserName');
+            const dropdownUserEmail = document.getElementById('dropdownUserEmail');
+            
+            if (userName) userName.textContent = user.hoTen || 'Tài khoản';
+            if (dropdownUserName) dropdownUserName.textContent = user.hoTen || 'User';
+            if (dropdownUserEmail) dropdownUserEmail.textContent = user.email || '';
+            
+            console.log('✅ User logged in:', user.hoTen);
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            // Clear invalid data
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+        }
+    } else {
+        // Show login button, hide account dropdown
+        if (btnLogin) btnLogin.style.display = 'flex';
+        if (userAccount) userAccount.style.display = 'none';
+    }
+}
+
+// Toggle account dropdown menu
+function toggleAccountMenu() {
+    const dropdown = document.getElementById('accountDropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('active');
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const userAccount = document.getElementById('userAccount');
+    const dropdown = document.getElementById('accountDropdown');
+    
+    if (userAccount && dropdown && !userAccount.contains(e.target)) {
+        dropdown.classList.remove('active');
+    }
+});
+
+// View user profile
+function viewProfile() {
+    console.log('📄 View Profile');
+    Toast.info('Chức năng xem thông tin cá nhân sẽ sớm được ra mắt!', 'Tính năng đang phát triển');
+    toggleAccountMenu();
+    return false;
+}
+
+// View user bookings
+function viewBookings() {
+    console.log('🎫 View Bookings');
+    Toast.info('Chức năng xem vé của tôi sẽ sớm được ra mắt!', 'Tính năng đang phát triển');
+    toggleAccountMenu();
+    return false;
+}
+
+// View booking history
+function viewHistory() {
+    console.log('📜 View History');
+    Toast.info('Chức năng xem lịch sử đặt vé sẽ sớm được ra mắt!', 'Tính năng đang phát triển');
+    toggleAccountMenu();
+    return false;
+}
+
+// Logout user
+async function logout() {
+    const confirmed = await Modal.confirm(
+        'Bạn có chắc chắn muốn đăng xuất?',
+        'Đăng xuất',
+        'warning'
+    );
+    
+    if (confirmed) {
+        // Clear user data
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        
+        console.log('👋 User logged out');
+        Toast.success('Đã đăng xuất thành công!');
+        
+        // Reload page to update UI
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+    
+    return false;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    checkLoginStatus();
+});
+
+// Make functions global
+window.toggleAccountMenu = toggleAccountMenu;
+window.viewProfile = viewProfile;
+window.viewBookings = viewBookings;
+window.viewHistory = viewHistory;
+window.logout = logout;
 
 // ==================== AUTH MODAL WIRING ====================
 document.addEventListener('DOMContentLoaded', () => {

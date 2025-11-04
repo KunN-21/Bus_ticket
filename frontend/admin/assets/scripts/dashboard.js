@@ -4,9 +4,64 @@
 const API_BASE_URL = "http://localhost:8000/api/v1";
 
 // ===================================
+// Check Authentication
+// ===================================
+function checkAuth() {
+  const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+  const userType = localStorage.getItem("user_type");
+  const role = localStorage.getItem("role");
+
+  console.log("Auth Check:", { token: !!token, userType, role }); // Debug log
+
+  // If not logged in, redirect to login
+  if (!token || !userType) {
+    Toast.warning("Vui lòng đăng nhập để tiếp tục");
+    setTimeout(() => {
+      window.location.href = "../login_register.html";
+    }, 1500);
+    return false;
+  }
+
+  // If not an employee, redirect to home
+  if (userType !== "employee") {
+    Toast.error("Bạn không có quyền truy cập trang này");
+    setTimeout(() => {
+      window.location.href = "../index.html";
+    }, 1500);
+    return false;
+  }
+
+  // Update user info in header
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userNameEl = document.querySelector(".user-name");
+  const userRoleEl = document.querySelector(".user-role");
+
+  if (userNameEl && user.hoTen) {
+    userNameEl.textContent = user.hoTen;
+  }
+
+  if (userRoleEl) {
+    if (role === "admin") {
+      userRoleEl.textContent = "Quản trị viên";
+    } else if (role === "nhanvien") {
+      userRoleEl.textContent = "Nhân viên bán vé";
+    } else {
+      userRoleEl.textContent = "Nhân viên";
+    }
+  }
+
+  return true;
+}
+
+// ===================================
 // Initialize Dashboard
 // ===================================
 document.addEventListener("DOMContentLoaded", function () {
+  // Check authentication first
+  if (!checkAuth()) {
+    return;
+  }
+
   initializeCharts();
   loadDashboardData();
   setupEventListeners();
@@ -64,6 +119,7 @@ async function loadDashboardData() {
     loadActiveBuses();
   } catch (error) {
     console.error("Error loading dashboard data:", error);
+    Toast.error("Không thể tải dữ liệu dashboard. Vui lòng thử lại sau.");
   }
 }
 
@@ -409,25 +465,25 @@ function loadPage(page) {
       // Already on dashboard
       break;
     case "buses":
-      alert("Chức năng Quản lý Xe đang được phát triển");
+      Toast.info("Chức năng Quản lý Xe đang được phát triển");
       break;
     case "routes":
-      alert("Chức năng Quản lý Tuyến đang được phát triển");
+      Toast.info("Chức năng Quản lý Tuyến đang được phát triển");
       break;
     case "bookings":
-      alert("Chức năng Quản lý Vé đang được phát triển");
+      Toast.info("Chức năng Quản lý Vé đang được phát triển");
       break;
     case "users":
-      alert("Chức năng Quản lý Người dùng đang được phát triển");
+      Toast.info("Chức năng Quản lý Người dùng đang được phát triển");
       break;
     case "seats":
-      alert("Chức năng Quản lý Ghế đang được phát triển");
+      Toast.info("Chức năng Quản lý Ghế đang được phát triển");
       break;
     case "revenue":
-      alert("Chức năng Báo cáo Doanh thu đang được phát triển");
+      Toast.info("Chức năng Báo cáo Doanh thu đang được phát triển");
       break;
     case "settings":
-      alert("Chức năng Cài đặt đang được phát triển");
+      Toast.info("Chức năng Cài đặt đang được phát triển");
       break;
   }
 }
@@ -435,14 +491,29 @@ function loadPage(page) {
 // ===================================
 // Logout
 // ===================================
-function handleLogout() {
-  if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
-    // Clear localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+async function handleLogout() {
+  const confirmed = await Modal.confirm(
+    "Bạn có chắc chắn muốn đăng xuất?",
+    "Xác nhận đăng xuất",
+    "question"
+  );
 
-    // Redirect to login page
-    window.location.href = "../index.html";
+  if (confirmed) {
+    // Clear all localStorage keys (ensure complete logout)
+    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("user_type");
+    localStorage.removeItem("role");
+    
+    console.log("🔒 Admin logged out, localStorage cleared");
+
+    Toast.success("Đăng xuất thành công!");
+
+    // Redirect to login page after a short delay
+    setTimeout(() => {
+      window.location.href = "../login_register.html";
+    }, 1000);
   }
 }
 
@@ -464,6 +535,39 @@ function formatDate(date) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(date));
+}
+
+// API Helper with Toast notifications
+async function apiCall(url, options = {}) {
+  try {
+    const token = localStorage.getItem("token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    };
+
+    const response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401) {
+      Toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      setTimeout(() => {
+        localStorage.clear();
+        window.location.href = "../login_register.html";
+      }, 2000);
+      throw new Error("Unauthorized");
+    }
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Có lỗi xảy ra");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("API Error:", error);
+    throw error;
+  }
 }
 
 // ===================================

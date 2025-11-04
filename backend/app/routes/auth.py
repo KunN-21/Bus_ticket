@@ -6,7 +6,7 @@ from app.models import (
     VerifyOTPRequest, 
     SetPasswordRequest, 
     CompleteRegistrationRequest,
-    KhachHangLogin,
+    LoginRequest,
     Token
 )
 from app.services.otp_service import (
@@ -204,14 +204,41 @@ async def complete_registration(request: CompleteRegistrationRequest):
 # ========== LOGIN ==========
 
 @router.post("/login", response_model=Token)
-async def login(request: KhachHangLogin):
+async def login(request: LoginRequest):
     """
-    Login with email and password
+    Universal login for both customers and employees
+    - Checks khachhang collection first
+    - If not found, checks nhanvien collection
+    - For employees, retrieves chucvu (role) information
+    - Returns user_type and role to determine access level
+      * customer → regular customer
+      * employee + admin → full admin access
+      * employee + nhanvien → ticket sales staff access
     """
     db = mongodb_client.get_db()
     
-    # Find user by email
+    # Try to find in khachhang (customers) first
     user = await db.khachhang.find_one({"email": request.email})
+    user_type = "customer"
+    collection_name = "khachhang"
+    id_field = "maKH"
+    role = None
+    chuc_vu_info = None
+    
+    # If not found in customers, check nhanvien (employees)
+    if not user:
+        user = await db.nhanvien.find_one({"email": request.email})
+        user_type = "employee"
+        collection_name = "nhanvien"
+        id_field = "maNV"
+        
+        # If employee found, get chuc vu (role) information
+        if user and user.get("maChucVu"):
+            chuc_vu_info = await db.chucvu.find_one({"maChucVu": user["maChucVu"]})
+            if chuc_vu_info:
+                role = chuc_vu_info.get("maChucVu", "").lower()
+    
+    # If still not found, invalid credentials
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -226,26 +253,36 @@ async def login(request: KhachHangLogin):
         )
     
     # Update last login
-    await db.khachhang.update_one(
+    await db[collection_name].update_one(
         {"email": request.email},
         {"$set": {"lanCuoiDangNhap": datetime.utcnow()}}
     )
     
-    # Generate token
+    # Generate token with role information
     token_data = {
         "sub": request.email,
-        "type": "customer",
-        "maKH": user["maKH"]
+        "type": user_type,
+        id_field: user[id_field]
     }
+    if role:
+        token_data["role"] = role
+    
     access_token = create_access_token(token_data)
     
     # Remove password from response
     user.pop("password")
     user.pop("_id")
     
+    # Add chuc vu info to user response for employees
+    if chuc_vu_info:
+        chuc_vu_info.pop("_id", None)
+        user["chucVuInfo"] = chuc_vu_info
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
+        "user_type": user_type,
+        "role": role,
         "user": user
     }
 

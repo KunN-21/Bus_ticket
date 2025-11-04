@@ -5,20 +5,23 @@ from datetime import datetime
 # ========== NHAN VIEN (Employee) ==========
 class NhanVienBase(BaseModel):
     maNV: str
+    maChucVu: str
     hoTen: str
+    email: str
     SDT: str
-    ChucVu: str  # "QuanLy", "NhanVien", etc.
-    trangThai: str = "active"  # "active", "inactive"
+    CCCD: str
+    diaChi: str
+    hoaDon: List[str] = []  # List of maHoaDon
+
+class ChucVu(BaseModel):
+    maChucVu: str
+    tenChucVu: str
+    moTa: Optional[str] = None
 
 class NhanVienCreate(NhanVienBase):
     password: str
 
-class NhanVienLogin(BaseModel):
-    maNV: str
-    password: str
-
 class NhanVienResponse(NhanVienBase):
-    thoiGianTao: datetime
     lanCuoiDangNhap: Optional[datetime] = None
     
     class Config:
@@ -36,15 +39,15 @@ class KhachHangBase(BaseModel):
 class KhachHangCreate(KhachHangBase):
     password: str
 
-class KhachHangLogin(BaseModel):
-    email: str
-    password: str
-
 class KhachHangResponse(KhachHangBase):
     class Config:
         populate_by_name = True
 
 # ========== AUTH MODELS ==========
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 class RegisterInitiate(BaseModel):
     email: str
 
@@ -168,6 +171,8 @@ class HoaDonResponse(HoaDonBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
-    user: dict  # Can be NhanVienResponse or KhachHangResponse
+    user_type: str  # "customer" or "employee"
+    role: Optional[str] = None  # "admin" or "nhanvien" (employee role - only for employees)
+    user: dict  # NhanVienResponse or KhachHangResponse
 
 

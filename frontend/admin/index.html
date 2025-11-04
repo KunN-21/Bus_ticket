@@ -1,239 +1,234 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin Dashboard - VOOBUS</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/main.css">
-  <link rel="stylesheet" href="styles/admin.css">
-</head>
-<body>
-  <div class="admin-layout">
-    <!-- Sidebar -->
-    <aside class="admin-sidebar" id="adminSidebar">
-      <div class="admin-brand">
-        <img src="../images/logo.png" alt="VOOBUS" onerror="this.style.display='none'">
-        <h3>VOOBUS Admin</h3>
-      </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Quản lý vé xe khách</title>
 
-      <nav class="admin-nav">
-        <ul class="nav-menu">
-          <li class="nav-item active">
-            <a href="index.html">
-              <span class="icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-              </span>
-              <span>Dashboard</span>
-            </a>
-          </li>
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
 
-          <li class="nav-item has-submenu">
-            <div class="nav-title">
-              <span class="icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-              </span>
-              <span>Quản lý người dùng</span>
-              <span class="arrow">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </span>
-            </div>
-            <ul class="submenu">
-              <li><a href="customers.html">Khách hàng</a></li>
-              <li><a href="staff.html">Nhân viên</a></li>
-            </ul>
-          </li>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-          <li class="nav-item">
-            <a href="tickets.html">
-              <span class="icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                </svg>
-              </span>
-              <span>Quản lý vé</span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a href="schedules.html">
-              <span class="icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="1" y="3" width="15" height="13"></rect>
-                  <path d="M16 8h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"></path>
-                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                  <circle cx="12.5" cy="18.5" r="2.5"></circle>
-                </svg>
-              </span>
-              <span>Quản lý lịch trình</span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a href="../index.html">
-              <span class="icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-              </span>
-              <span>Về trang chủ</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-
-      <div class="admin-user">
-        <img src="../images/logo.png" alt="Admin" class="user-avatar" onerror="this.style.display='none'">
-        <div class="user-info">
-          <strong>Admin User</strong>
-          <small>admin@voobus.vn</small>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/styles/dashboard.css" />
+    <link rel="stylesheet" href="assets/styles/toast.css" />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="logo">
+          <i class="fas fa-bus"></i>
+          <h2>VOOBUS Admin</h2>
         </div>
-      </div>
-    </aside>
+        <nav class="menu">
+          <a href="#" class="menu-item active" data-page="dashboard">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="#" class="menu-item" data-page="buses">
+            <i class="fas fa-bus"></i>
+            <span>Quản lý Xe</span>
+          </a>
+          <a href="#" class="menu-item" data-page="routes">
+            <i class="fas fa-route"></i>
+            <span>Quản lý Tuyến</span>
+          </a>
+          <a href="#" class="menu-item" data-page="bookings">
+            <i class="fas fa-ticket-alt"></i>
+            <span>Quản lý Vé</span>
+          </a>
+          <a href="#" class="menu-item" data-page="users">
+            <i class="fas fa-users"></i>
+            <span>Người dùng</span>
+          </a>
+          <a href="#" class="menu-item" data-page="seats">
+            <i class="fas fa-chair"></i>
+            <span>Quản lý Ghế</span>
+          </a>
+          <a href="#" class="menu-item" data-page="revenue">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Doanh thu</span>
+          </a>
+          <a href="#" class="menu-item" data-page="settings">
+            <i class="fas fa-cog"></i>
+            <span>Cài đặt</span>
+          </a>
+        </nav>
 
-    <!-- Main Content -->
-    <main class="admin-main">
-      <header class="admin-header">
-        <button class="toggle-sidebar" onclick="toggleSidebar()" aria-label="Toggle sidebar">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
-        </button>
-        <h1>Dashboard</h1>
-        <div class="header-actions">
-          <button class="btn-icon" aria-label="Thông báo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-          </button>
-          <button class="btn-icon" aria-label="Cài đặt">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M12 1v6m0 6v6m5.656-15.364l-4.242 4.242m-2.828 2.828l-4.242 4.242M23 12h-6m-6 0H1m15.364 5.656l-4.242-4.242m-2.828-2.828l-4.242-4.242"></path>
-            </svg>
-          </button>
+        <div class="sidebar-footer">
+          <a href="#" class="menu-item logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Đăng xuất</span>
+          </a>
         </div>
-      </header>
+      </aside>
 
-      <div class="admin-content">
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+          <div class="header-left">
+            <h1>Dashboard Tổng Quan</h1>
+            <p class="subtitle">Chào mừng quay trở lại, Admin!</p>
+          </div>
+          <div class="header-right">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" placeholder="Tìm kiếm..." />
             </div>
-            <div class="stat-info">
-              <h3>Tổng khách hàng</h3>
-              <p class="stat-value">12,345</p>
-              <small class="stat-change positive">+5.2% so với tháng trước</small>
+            <div class="notification">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </div>
+            <div class="user-info">
+              <div class="user-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <div class="user-details">
+                <span class="user-name">Admin</span>
+                <span class="user-role">Quản trị viên</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="content">
+          <!-- Stats Cards -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon blue">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="stat-details">
+                <h3 class="stat-number" id="totalUsers">1,234</h3>
+                <p class="stat-label">Tổng người dùng</p>
+                <span class="stat-change positive">
+                  <i class="fas fa-arrow-up"></i> +12%
+                </span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon green">
+                <i class="fas fa-ticket-alt"></i>
+              </div>
+              <div class="stat-details">
+                <h3 class="stat-number" id="totalBookings">5,678</h3>
+                <p class="stat-label">Vé đã bán</p>
+                <span class="stat-change positive">
+                  <i class="fas fa-arrow-up"></i> +25%
+                </span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon orange">
+                <i class="fas fa-bus"></i>
+              </div>
+              <div class="stat-details">
+                <h3 class="stat-number" id="totalBuses">45</h3>
+                <p class="stat-label">Số xe hoạt động</p>
+                <span class="stat-change positive">
+                  <i class="fas fa-arrow-up"></i> +5%
+                </span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon purple">
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <div class="stat-details">
+                <h3 class="stat-number" id="totalRevenue">123M</h3>
+                <p class="stat-label">Doanh thu tháng</p>
+                <span class="stat-change positive">
+                  <i class="fas fa-arrow-up"></i> +18%
+                </span>
+              </div>
             </div>
           </div>
 
-          <div class="stat-card">
-            <div class="stat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+          <!-- Charts Section -->
+          <div class="charts-section">
+            <!-- Revenue Chart -->
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3><i class="fas fa-chart-line"></i> Doanh thu theo tháng</h3>
+                <select id="revenueFilter">
+                  <option value="6">6 tháng gần đây</option>
+                  <option value="12">12 tháng gần đây</option>
+                </select>
+              </div>
+              <canvas id="revenueChart"></canvas>
             </div>
-            <div class="stat-info">
-              <h3>Nhân viên</h3>
-              <p class="stat-value">56</p>
-              <small class="stat-change neutral">Không thay đổi</small>
+
+            <!-- Top Routes -->
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3><i class="fas fa-route"></i> Top tuyến đường</h3>
+              </div>
+              <canvas id="routesChart"></canvas>
             </div>
           </div>
 
-          <div class="stat-card">
-            <div class="stat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-              </svg>
+          <!-- Tables Section -->
+          <div class="tables-section">
+            <!-- Recent Bookings -->
+            <div class="table-card">
+              <div class="table-header">
+                <h3><i class="fas fa-ticket-alt"></i> Đặt vé gần đây</h3>
+                <a href="#" class="view-all"
+                  >Xem tất cả <i class="fas fa-arrow-right"></i
+                ></a>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Mã vé</th>
+                      <th>Khách hàng</th>
+                      <th>Tuyến đường</th>
+                      <th>Số ghế</th>
+                      <th>Giá tiền</th>
+                      <th>Trạng thái</th>
+                      <th>Thời gian</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recentBookingsTable">
+                    <!-- Data will be loaded by JS -->
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="stat-info">
-              <h3>Vé đã bán</h3>
-              <p class="stat-value">8,942</p>
-              <small class="stat-change positive">+12.5% so với tháng trước</small>
-            </div>
-          </div>
 
-          <div class="stat-card">
-            <div class="stat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="1" y="3" width="15" height="13"></rect>
-                <path d="M16 8h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"></path>
-                <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                <circle cx="12.5" cy="18.5" r="2.5"></circle>
-              </svg>
-            </div>
-            <div class="stat-info">
-              <h3>Chuyến hoạt động</h3>
-              <p class="stat-value">320</p>
-              <small class="stat-change neutral">Hôm nay</small>
+            <!-- Active Buses -->
+            <div class="table-card">
+              <div class="table-header">
+                <h3><i class="fas fa-bus"></i> Xe đang hoạt động</h3>
+                <a href="#" class="view-all"
+                  >Xem tất cả <i class="fas fa-arrow-right"></i
+                ></a>
+              </div>
+              <div class="bus-list" id="activeBusesList">
+                <!-- Data will be loaded by JS -->
+              </div>
             </div>
           </div>
         </div>
+      </main>
+    </div>
 
-        <!-- Recent Activity -->
-        <div class="section-card">
-          <h2>Hoạt động gần đây</h2>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Thời gian</th>
-                <th>Loại</th>
-                <th>Mô tả</th>
-                <th>Người thực hiện</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>10:23 AM</td>
-                <td><span class="badge badge-success">Vé mới</span></td>
-                <td>Đặt vé HCM → Đà Lạt</td>
-                <td>Nguyễn A</td>
-              </tr>
-              <tr>
-                <td>10:15 AM</td>
-                <td><span class="badge badge-info">Lịch trình</span></td>
-                <td>Cập nhật chuyến #9821</td>
-                <td>Admin</td>
-              </tr>
-              <tr>
-                <td>09:45 AM</td>
-                <td><span class="badge badge-warning">Khách hàng</span></td>
-                <td>Đăng ký tài khoản mới</td>
-                <td>Trần B</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <script src="scripts/admin.js"></script>
-</body>
+    <!-- Toast & Modal System -->
+    <script src="assets/scripts/toast.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="assets/scripts/dashboard.js"></script>
+  </body>
 </html>

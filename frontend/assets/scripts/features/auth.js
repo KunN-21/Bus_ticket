@@ -126,16 +126,26 @@ document.getElementById('loginFormElement')?.addEventListener('submit', async (e
             throw new Error(result.detail || 'Đăng nhập thất bại');
         }
 
-        // Save token and user info
-        localStorage.setItem('access_token', result.access_token);
+        // Save token and user info (use consistent key names)
+        localStorage.setItem('token', result.access_token);
+        localStorage.setItem('access_token', result.access_token); // Keep for backward compatibility
         localStorage.setItem('user', JSON.stringify(result.user));
+        localStorage.setItem('user_type', result.user_type);
+        localStorage.setItem('role', result.role || ''); // Save role for admin/staff distinction
 
-        showToast('success', 'Đăng nhập thành công! Đang chuyển đến trang chủ...');
-        
-        // Redirect to home page
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1000);
+        // Check user type and redirect accordingly
+        if (result.user_type === 'employee') {
+            const roleName = result.role === 'admin' ? 'Quản trị viên' : 'Nhân viên';
+            showToast('success', `Đăng nhập thành công! Đang chuyển đến trang quản trị...`, `Chào mừng ${roleName}`);
+            setTimeout(() => {
+                window.location.href = 'admin/index.html';
+            }, 1000);
+        } else {
+            showToast('success', 'Đăng nhập thành công! Đang chuyển đến trang chủ...');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        }
 
     } catch (error) {
         showToast('error', error.message, 'Lỗi đăng nhập');
@@ -358,14 +368,37 @@ document.getElementById('otpCode')?.addEventListener('input', (e) => {
 // Initialize - show login form by default
 document.addEventListener('DOMContentLoaded', () => {
     showForm('login');
-});
-
-// Check if user is already logged in
-if (localStorage.getItem('access_token')) {
+    
+    // Check if user is already logged in (moved inside DOMContentLoaded)
+    const savedToken = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const userType = localStorage.getItem('user_type');
     const currentPage = window.location.pathname;
-    if (currentPage.includes('login_register.html')) {
-        // User is already logged in, redirect to home
-        window.location.href = 'index.html';
+    
+    console.log('Auth Check:', { 
+        savedToken: !!savedToken, 
+        userType, 
+        currentPage,
+        allKeys: Object.keys(localStorage)
+    });
+    
+    if (savedToken && userType) {
+        if (currentPage.includes('login_register.html')) {
+            console.log('User already logged in, redirecting...');
+            // User is already logged in, redirect to appropriate page
+            if (userType === 'employee') {
+                window.location.href = 'admin/index.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+    } else if (savedToken && !userType) {
+        // Token exists but no user_type - corrupted data, clear it
+        console.warn('Corrupted auth data detected, clearing localStorage');
+        localStorage.removeItem('token');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('user_type');
+        localStorage.removeItem('role');
     }
-}
+});
 

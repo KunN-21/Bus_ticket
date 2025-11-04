@@ -314,8 +314,10 @@ console.log('%cVersion: 1.0.0 | 2025', 'color: #999; font-size: 10px;');
 // ==================== USER ACCOUNT MANAGEMENT ====================
 // Check if user is logged in and update header
 function checkLoginStatus() {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
     const userStr = localStorage.getItem('user');
+    const userType = localStorage.getItem('user_type');
+    const role = localStorage.getItem('role');
     
     const btnLogin = document.getElementById('btnLogin');
     const userAccount = document.getElementById('userAccount');
@@ -333,16 +335,31 @@ function checkLoginStatus() {
             const dropdownUserName = document.getElementById('dropdownUserName');
             const dropdownUserEmail = document.getElementById('dropdownUserEmail');
             
-            if (userName) userName.textContent = user.hoTen || 'Tài khoản';
+            // Show role badge for employees
+            let roleText = '';
+            if (userType === 'employee') {
+                if (role === 'admin') {
+                    roleText = ' (Quản trị viên)';
+                } else if (role === 'nhanvien') {
+                    roleText = ' (Nhân viên)';
+                } else {
+                    roleText = ' (Nhân viên)';
+                }
+            }
+            
+            if (userName) userName.textContent = (user.hoTen || 'Tài khoản') + roleText;
             if (dropdownUserName) dropdownUserName.textContent = user.hoTen || 'User';
             if (dropdownUserEmail) dropdownUserEmail.textContent = user.email || '';
             
-            console.log('✅ User logged in:', user.hoTen);
+            console.log(`✅ User logged in: ${user.hoTen} (${userType}${role ? ' - ' + role : ''})`);
         } catch (error) {
             console.error('Error parsing user data:', error);
             // Clear invalid data
             localStorage.removeItem('access_token');
+            localStorage.removeItem('token');
             localStorage.removeItem('user');
+            localStorage.removeItem('user_type');
+            localStorage.removeItem('role');
         }
     } else {
         // Show login button, hide account dropdown
@@ -402,9 +419,12 @@ async function logout() {
     );
     
     if (confirmed) {
-        // Clear user data
+        // Clear all user data (multiple keys for compatibility)
         localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('user_type');
+        localStorage.removeItem('role');
         
         console.log('👋 User logged out');
         Toast.success('Đã đăng xuất thành công!');

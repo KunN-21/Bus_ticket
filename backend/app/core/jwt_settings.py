@@ -1,4 +1,4 @@
-import jwt
+import jwt  # PyJWT package
 import bcrypt
 from datetime import datetime, timedelta
 from app.config import settings

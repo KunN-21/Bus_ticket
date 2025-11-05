@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tìm Chuyến Xe - VooBus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles/core/main.css">
+    <link rel="stylesheet" href="assets/styles/components/header.css">
+    <link rel="stylesheet" href="assets/styles/components/footer.css">
+    <link rel="stylesheet" href="assets/styles/components/toast.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #F8F8F8;
+            font-family: 'Inter', 'Roboto', sans-serif;
+        }
+
+        .search-results-section {
+            padding: 100px 0 60px;
+            min-height: 100vh;
+        }
+
+        /* Search Form */
+        .search-form-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px 15px;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #E85A4F;
+            box-shadow: 0 0 0 3px rgba(232, 90, 79, 0.1);
+        }
+
+        .btn-search-again {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #E85A4F 0%, #FF6B5A 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-search-again:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(232, 90, 79, 0.3);
+        }
+
+        /* Route Card - Modern Design */
+        .route-card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #F0F0F0;
+            transition: all 0.3s ease;
+        }
+
+        .route-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Header - Trip Timeline */
+        .trip-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .trip-time-point {
+            flex: 1;
+        }
+
+        .trip-time {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .trip-location {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .location-dot {
+            width: 8px;
+            height: 8px;
+            background: #2EAE4E;
+            border-radius: 50%;
+        }
+
+        /* Duration */
+        .trip-duration {
+            flex: 0 0 200px;
+            text-align: center;
+            position: relative;
+        }
+
+        .duration-line {
+            height: 2px;
+            background: linear-gradient(to right, #E0E0E0 0%, #E0E0E0 50%, #E0E0E0 100%);
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .duration-line::before,
+        .duration-line::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #E85A4F;
+            border-radius: 50%;
+            top: -2px;
+        }
+
+        .duration-line::before {
+            left: 0;
+        }
+
+        .duration-line::after {
+            right: 0;
+        }
+
+        .duration-text {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .journey-location {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .journey-duration {
+            flex: 1;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .duration-line {
+            height: 2px;
+            background: linear-gradient(to right, #FF6600, #FF8800);
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .duration-line::before {
+            content: '🚌';
+            position: absolute;
+            right: -10px;
+            top: -10px;
+            font-size: 16px;
+        }
+
+        .duration-text {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .route-vehicle {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .vehicle-type {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .vehicle-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .route-price-action {
+            text-align: right;
+        }
+
+        .price-section {
+            margin-bottom: 15px;
+        }
+
+        .price-label {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .price-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #FF6600;
+            line-height: 1;
+        }
+
+        .seats-available {
+            font-size: 13px;
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .btn-select-route {
+            background: linear-gradient(135deg, #FF6600 0%, #FF8800 100%);
+            color: white;
+            padding: 14px 40px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255,102,0,0.2);
+        }
+
+        .btn-select-route:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255,102,0,0.35);
+        }
+
+        .btn-select-route:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .route-details {
+            display: flex;
+            gap: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .detail-icon {
+            color: #FF6600;
+        }
+
+        .loading, .no-results {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 16px;
+            margin-top: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #FF6600;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-results-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .no-results h3 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .no-results p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .no-results h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #FF6600;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Seat Selection Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .modal-header h2 {
+            color: #FF6600;
+            font-size: 1.5rem;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.3s;
+        }
+
+        .btn-close:hover {
+            color: #FF6600;
+        }
+
+        .seat-layout {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .seat {
+            aspect-ratio: 1;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .seat.available {
+            background: #fff;
+            color: #333;
+        }
+
+        .seat.available:hover {
+            border-color: #FF6600;
+            background: #fff5f0;
+        }
+
+        .seat.selected {
+            background: #FF6600;
+            color: white;
+            border-color: #FF6600;
+        }
+
+        .seat.booked {
+            background: #e0e0e0;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .seat-legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid #ddd;
+        }
+
+        .booking-summary {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .summary-row.total {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #FF6600;
+            padding-top: 10px;
+            border-top: 2px solid #ddd;
+        }
+
+        .btn-confirm-booking {
+            width: 100%;
+            background: linear-gradient(135deg, #FF6B2C 0%, #F87438 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-confirm-booking:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255,107,44,0.4);
+        }
+
+        .btn-confirm-booking:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <!-- Logo -->
+                <a href="index.html" class="logo">
+                    <div class="logo-text">
+                        <span class="logo-brand">VOOBUS</span>
+                    </div>
+                </a>
+
+                <!-- Navigation -->
+                <nav class="nav-menu">
+                    <a href="index.html" class="nav-link">Trang chủ</a>
+                    <a href="lich-trinh.html" class="nav-link">Lịch trình</a>
+                    <a href="#lookup" class="nav-link">Tra cứu vé</a>
+                    <a href="#invoice" class="nav-link">Hóa đơn</a>
+                    <a href="#about" class="nav-link">Về chúng tôi</a>
+                </nav>
+
+                <!-- Right Actions -->
+                <div class="header-actions">
+                    <button class="btn-language">
+                        <img src="https://futabus.vn/images/icons/vietnam.svg" alt="VI" width="20">
+                        VI
+                    </button>
+                    
+                    <!-- Login Button -->
+                    <a href="login_register.html" class="btn-login" id="btnLogin">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        Đăng nhập
+                    </a>
+
+                    <!-- User Account Dropdown -->
+                    <div class="user-account" id="userAccount" style="display: none;">
+                        <button class="btn-account" onclick="toggleAccountMenu()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span id="userName">Tài khoản</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div class="account-dropdown" id="accountDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-user-name" id="dropdownUserName">User</div>
+                                <div class="dropdown-user-email" id="dropdownUserEmail">user@example.com</div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" class="dropdown-item" onclick="return viewProfile()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                                Thông tin cá nhân
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="return viewBookings()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+                                    <polyline points="17 2 12 7 7 2"></polyline>
+                                </svg>
+                                Vé của tôi
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="return viewHistory()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                Lịch sử đặt vé
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" class="dropdown-item logout" onclick="return logout()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                    <polyline points="16 17 21 12 16 7"></polyline>
+                                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                                </svg>
+                                Đăng xuất
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Menu Toggle -->
+                    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Results -->
+    <section class="search-results-section">
+        <div class="container">
+            <!-- Search Summary Header -->
+            <div class="search-header" id="searchHeader" style="display: none;">
+                <div class="container">
+                    <div class="search-summary">
+                        <div class="search-route">
+                            <h2 id="searchFrom"></h2>
+                            <span class="search-route-arrow">→</span>
+                            <h2 id="searchTo"></h2>
+                        </div>
+                        <div class="search-date" id="searchDateDisplay"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingDiv" class="loading">
+                <div class="spinner"></div>
+                <p style="color: #666; font-size: 16px;">Đang tìm kiếm chuyến xe...</p>
+            </div>
+
+            <!-- Results Container -->
+            <div id="resultsDiv" style="display: none;">
+                <div id="routesList"></div>
+            </div>
+
+            <!-- No Results -->
+            <div id="noResultsDiv" class="no-results" style="display: none;">
+                <div class="no-results-icon">🔍</div>
+                <h3>Không tìm thấy chuyến xe phù hợp</h3>
+                <p>Vui lòng thử lại với điểm đi/đến hoặc ngày khác</p>
+                <button onclick="window.location.href='index.html'" style="background: #FF6600; color: white; padding: 14px 35px; border-radius: 30px; border: none; cursor: pointer; font-weight: 600; margin-top: 20px; transition: all 0.3s;">
+                    ← Quay lại trang chủ
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seat Selection Modal -->
+    <div id="seatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Chọn Ghế</h2>
+                <button class="btn-close" onclick="closeSeatModal()">&times;</button>
+            </div>
+
+            <div id="routeInfo" class="route-info"></div>
+
+            <div class="seat-legend">
+                <div class="legend-item">
+                    <div class="legend-box" style="background: white;"></div>
+                    <span>Còn trống</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #FF6600; border-color: #FF6600;"></div>
+                    <span>Đang chọn</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #e0e0e0;"></div>
+                    <span>Đã đặt</span>
+                </div>
+            </div>
+
+            <div id="seatLayout" class="seat-layout"></div>
+
+            <div class="booking-summary">
+                <div class="summary-row">
+                    <span>Ghế đã chọn:</span>
+                    <span id="selectedSeats">-</span>
+                </div>
+                <div class="summary-row">
+                    <span>Số lượng:</span>
+                    <span id="seatCount">0</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Tổng tiền:</span>
+                    <span id="totalPrice">0đ</span>
+                </div>
+            </div>
+
+            <button id="btnConfirmBooking" class="btn-confirm-booking" onclick="confirmBooking()" disabled>
+                Xác nhận đặt vé
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-col">
+                    <h3 class="footer-title">VOOBUS</h3>
+                    <p class="footer-desc">
+                        Hệ thống đặt vé xe khách trực tuyến hàng đầu Việt Nam.
+                        Mang đến dịch vụ vận chuyển chất lượng cao, an toàn và tiện lợi.
+                    </p>
+                </div>
+
+                <div class="footer-col">
+                    <h4 class="footer-heading">Liên Kết Nhanh</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html">Trang chủ</a></li>
+                        <li><a href="lich-trinh.html">Lịch trình</a></li>
+                        <li><a href="#lookup">Tra cứu vé</a></li>
+                        <li><a href="#about">Về chúng tôi</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4 class="footer-heading">Hỗ Trợ</h4>
+                    <ul class="footer-links">
+                        <li><a href="#faq">Câu hỏi thường gặp</a></li>
+                        <li><a href="#policy">Chính sách</a></li>
+                        <li><a href="#terms">Điều khoản</a></li>
+                        <li><a href="#contact">Liên hệ</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4 class="footer-heading">Liên Hệ</h4>
+                    <ul class="footer-contact">
+                        <li>📞 Hotline: 1900 xxxx</li>
+                        <li>📧 Email: support@voobus.vn</li>
+                        <li>📍 Địa chỉ: TP. Hồ Chí Minh</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>© 2025 VOOBUS - Hệ Thống Đặt Vé Xe Khách. Bảo lưu mọi quyền.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="assets/scripts/core/toast.js"></script>
+    <script src="scripts/search-results.js"></script>
+    <script src="assets/scripts/core/main.js"></script>
+</body>
+</html>

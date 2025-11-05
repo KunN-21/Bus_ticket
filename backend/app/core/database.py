@@ -53,3 +53,13 @@ class MongoDBClient:
         return self.db
 
 mongodb_client = MongoDBClient()
+
+# Helper function to get database instance
+async def get_database():
+    """Get MongoDB database instance"""
+    return mongodb_client.get_db()
+
+# Helper function to get Redis client
+async def get_redis():
+    """Get Redis client instance"""
+    return redis_client.get_client()

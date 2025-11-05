@@ -236,7 +236,8 @@ async def login(request: LoginRequest):
         if user and user.get("maChucVu"):
             chuc_vu_info = await db.chucvu.find_one({"maChucVu": user["maChucVu"]})
             if chuc_vu_info:
-                role = chuc_vu_info.get("maChucVu", "").lower()
+                # Keep canonical maChucVu (e.g. "CV001") in the token instead of lowercasing
+                role = chuc_vu_info.get("maChucVu", "")
     
     # If still not found, invalid credentials
     if not user:

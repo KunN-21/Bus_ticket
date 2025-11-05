@@ -4,6 +4,9 @@ from contextlib import asynccontextmanager
 from app.core import redis_client, mongodb_client
 from app.config import settings
 from app.routes import auth_router, users_router
+from app.routes.admin_employees import router as admin_employees_router
+from app.routes.admin_customers import router as admin_customers_router
+from app.routes.roles import router as roles_router
 # from app.routes import tickets_router, bookings_router, payments_router
 
 @asynccontextmanager
@@ -41,6 +44,9 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(admin_employees_router)
+app.include_router(admin_customers_router)
+app.include_router(roles_router)
 
 @app.get("/")
 async def root():

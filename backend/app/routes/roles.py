@@ -1,16 +1,15 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from typing import List
 from app.core.database import mongodb_client
-from app.core.middleware import get_current_employee
 
 router = APIRouter(prefix="/api/v1", tags=["Reference - Roles"])
 
 
 @router.get("/chucvu", response_model=List[dict])
-async def list_roles(current_employee: dict = Depends(get_current_employee)):
+async def list_roles():
     """
     Return list of available roles (chucvu collection).
-    Accessible by employees (admin and non-admin) so frontend can populate role dropdowns.
+    Public endpoint - no authentication required so frontend can populate role dropdowns.
     """
     db = mongodb_client.get_db()
     docs = await db.chucvu.find().to_list(1000)

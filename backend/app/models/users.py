@@ -16,6 +16,7 @@ class EmployeeCreate(BaseModel):
 class EmployeeUpdate(BaseModel):
     """Model cập nhật nhân viên - Admin only"""
     hoTen: Optional[str] = Field(None, min_length=2, max_length=100)
+    email: Optional[EmailStr] = None
     SDT: Optional[str] = Field(None, pattern=r'^\d{10}$')
     CCCD: Optional[str] = Field(None, pattern=r'^\d{12}$')
     diaChi: Optional[str] = Field(None, min_length=5)
@@ -46,8 +47,9 @@ class CustomerCreate(BaseModel):
     password: str = Field(..., min_length=6)
 
 class CustomerUpdate(BaseModel):
-    """Model cập nhật khách hàng - Admin + Employee"""
+    """Model cập nhật khách hàng - Admin only"""
     hoTen: Optional[str] = Field(None, min_length=2, max_length=100)
+    email: Optional[EmailStr] = None
     SDT: Optional[str] = Field(None, pattern=r'^\d{10}$')
     CCCD: Optional[str] = Field(None, pattern=r'^\d{12}$')
     diaChi: Optional[str] = Field(None, min_length=5)

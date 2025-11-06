@@ -1,7 +1,9 @@
 """
 Rebuilt Admin Customer Routes
 
-Provides CRUD for customers (accessible to admin and employees via `get_current_employee`).
+Provides CRUD for customers.
+- View & Create: Admin and Employee can view and create customers
+- Update & Delete: Only Admin can update/delete
 Ensures consistent request/response shapes and clear validation messages.
 """
 
@@ -10,7 +12,7 @@ from typing import List
 from datetime import datetime, timedelta
 from app.models.users import CustomerCreate, CustomerUpdate, CustomerResponse
 from app.core.database import mongodb_client
-from app.core.middleware import get_current_employee
+from app.core.middleware import get_current_employee, get_current_admin
 from app.core.jwt_settings import hash_password
 from app.services import cache_service
 
@@ -79,7 +81,7 @@ async def create_customer(customer: CustomerCreate, current_employee: dict = Dep
 
 
 @router.put("/{maKH}", response_model=CustomerResponse)
-async def update_customer(maKH: str, payload: CustomerUpdate, current_employee: dict = Depends(get_current_employee)):
+async def update_customer(maKH: str, payload: CustomerUpdate, current_admin: dict = Depends(get_current_admin)):
     db = mongodb_client.get_db()
 
     existing = await db.khachhang.find_one({"maKH": maKH})
@@ -91,6 +93,15 @@ async def update_customer(maKH: str, payload: CustomerUpdate, current_employee: 
     if payload.SDT: update["SDT"] = payload.SDT
     if payload.diaChi: update["diaChi"] = payload.diaChi
     if payload.password: update["password"] = hash_password(payload.password)
+
+    # Check email uniqueness across both collections
+    if payload.email:
+        if payload.email != existing.get("email"):
+            if await db.khachhang.find_one({"email": payload.email}):
+                raise HTTPException(status_code=400, detail="Email đã được sử dụng bởi khách hàng khác")
+            if await db.nhanvien.find_one({"email": payload.email}):
+                raise HTTPException(status_code=400, detail="Email đã được sử dụng bởi nhân viên")
+        update["email"] = payload.email
 
     if payload.CCCD:
         if payload.CCCD != existing.get("CCCD") and await db.khachhang.find_one({"CCCD": payload.CCCD}):
@@ -113,7 +124,7 @@ async def update_customer(maKH: str, payload: CustomerUpdate, current_employee: 
 
 
 @router.delete("/{maKH}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_customer(maKH: str, current_employee: dict = Depends(get_current_employee)):
+async def delete_customer(maKH: str, current_admin: dict = Depends(get_current_admin)):
     db = mongodb_client.get_db()
 
     if not await db.khachhang.find_one({"maKH": maKH}):

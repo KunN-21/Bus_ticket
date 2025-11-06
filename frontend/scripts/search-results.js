@@ -217,8 +217,10 @@ async function selectRoute(route) {
     // Check authentication
     const token = localStorage.getItem('access_token');
     if (!token) {
-        alert('Vui lòng đăng nhập để đặt vé!');
-        window.location.href = 'login_register.html';
+        Toast.warning('Vui lòng đăng nhập để đặt vé!', 'Yêu cầu đăng nhập');
+        setTimeout(() => {
+            window.location.href = 'login_register.html';
+        }, 1500);
         return;
     }
 
@@ -232,7 +234,7 @@ async function selectRoute(route) {
 
     } catch (error) {
         console.error('Error:', error);
-        alert('Không thể tải thông tin ghế. Vui lòng thử lại!');
+        Toast.error('Không thể tải thông tin ghế. Vui lòng thử lại!', 'Lỗi tải dữ liệu');
     }
 }
 
@@ -301,19 +303,19 @@ function openSeatModal(routeDetails) {
         }
     });
 
-    // Render upper floor seats with spacing for first row
+    // Render upper floor seats with spacing for first row (same layout as lower floor)
     upperFloorSeats.forEach((seat, index) => {
         const seatNumber = parseInt(seat.maGhe.replace(/[A-Z]/g, ''));
         
         // Add seat A18
         if (seatNumber === 18) {
-            // Add empty space first
+            const seatDiv = createSeatElement(seat);
+            seatLayoutUpper.appendChild(seatDiv);
+            
+            // Add empty space between A18 and A19 (same as A01 and A02)
             const emptyDiv = document.createElement('div');
             emptyDiv.className = 'seat seat-empty';
             seatLayoutUpper.appendChild(emptyDiv);
-            
-            const seatDiv = createSeatElement(seat);
-            seatLayoutUpper.appendChild(seatDiv);
         }
         // Add seat A19
         else if (seatNumber === 19) {
@@ -334,11 +336,13 @@ function openSeatModal(routeDetails) {
 // Create seat element
 function createSeatElement(seat) {
     const seatDiv = document.createElement('div');
-    seatDiv.className = `seat ${seat.trangThai ? 'booked' : 'available'}`;
+    // trangThai: true = còn trống, false = đã đặt
+    seatDiv.className = `seat ${seat.trangThai ? 'available' : 'booked'}`;
     seatDiv.textContent = seat.maGhe;
     seatDiv.dataset.seatId = seat.maGhe;
 
-    if (!seat.trangThai) {
+    // Chỉ cho phép click nếu ghế còn trống (trangThai = true)
+    if (seat.trangThai) {
         seatDiv.onclick = () => toggleSeat(seat.maGhe);
     }
 
@@ -391,39 +395,52 @@ function updateBookingSummary() {
     }
 }
 
-// Confirm booking
+// Confirm booking - Create pending booking in Redis
 async function confirmBooking() {
     if (selectedSeats.length === 0) {
-        alert('Vui lòng chọn ít nhất 1 ghế!');
+        Toast.warning('Vui lòng chọn ít nhất 1 ghế!', 'Chưa chọn ghế');
         return;
     }
 
     const token = localStorage.getItem('access_token');
     if (!token) {
-        alert('Vui lòng đăng nhập để đặt vé!');
-        window.location.href = 'login_register.html';
+        Toast.warning('Vui lòng đăng nhập để đặt vé!', 'Yêu cầu đăng nhập');
+        setTimeout(() => {
+            window.location.href = 'login_register.html';
+        }, 1500);
         return;
     }
 
+    // Generate unique session ID for this user
+    let sessionId = sessionStorage.getItem('booking_session_id');
+    if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('booking_session_id', sessionId);
+    }
+
     console.log('Booking data:', {
-        maTuyenXe: currentRoute.maTuyenXe,
+        maTuyen: currentRoute.maTuyenXe,
+        ngayDi: searchDate,
+        gioDi: currentRoute.thoiGianXuatBen,
         gheNgoi: selectedSeats,
         tongTien: ticketPrice * selectedSeats.length,
-        ngayDi: searchDate
+        sessionId: sessionId
     });
 
     try {
-        const response = await fetch(`${API_URL}/routes/book`, {
+        // Create pending booking in Redis (TTL 3 minutes)
+        const response = await fetch(`${API_URL}/api/v1/bookings`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                maTuyenXe: currentRoute.maTuyenXe,
-                gheNgoi: selectedSeats,
-                tongTien: ticketPrice * selectedSeats.length,
-                ngayDi: searchDate
+                maTuyen: currentRoute.maTuyenXe,
+                ngayDi: searchDate,
+                gioDi: currentRoute.thoiGianXuatBen,
+                soGheNgoi: selectedSeats,  // Fix: gheNgoi → soGheNgoi
+                sessionId: sessionId
             })
         });
 
@@ -434,19 +451,22 @@ async function confirmBooking() {
         }
 
         const booking = await response.json();
+        console.log('Booking created:', booking);
         
-        // Close seat modal and show ticket info modal
+        // Close seat modal and show payment QR modal
         closeSeatModal();
-        showTicketInfoModal(booking);
+        showPaymentModal(booking);
 
     } catch (error) {
         console.error('Booking error:', error);
-        alert(error.message || 'Đặt vé thất bại. Vui lòng thử lại!');
+        Toast.error(error.message || 'Đặt vé thất bại. Vui lòng thử lại!', 'Lỗi đặt vé');
     }
 }
 
-// Show ticket info modal
-async function showTicketInfoModal(booking) {
+// Show payment modal with QR code and countdown timer
+async function showPaymentModal(booking) {
+    console.log('showPaymentModal called with:', booking);
+    
     // Get user info
     const token = localStorage.getItem('access_token');
     let userInfo = { hoTen: '', email: '', soDienThoai: '' };
@@ -465,26 +485,56 @@ async function showTicketInfoModal(booking) {
     const modal = document.getElementById('ticketInfoModal');
     const ticketInfo = document.getElementById('ticketInfoContent');
     
+    if (!modal || !ticketInfo) {
+        console.error('Modal elements not found!');
+        return;
+    }
+    
+    console.log('Modal elements found, rendering...');
+    
     const departTime = currentRoute.thoiGianXuatBen || 'Chưa xác định';
     const arrivalTime = currentRoute.thoiGianDenDuKien || 'Chưa xác định';
     
     ticketInfo.innerHTML = `
         <div class="ticket-header">
-            <h3>THÔNG TIN VÉ XE</h3>
+            <h3>THANH TOÁN BẰNG QR CODE</h3>
             <p class="ticket-code">Mã đặt vé: <strong>${booking.maDatVe}</strong></p>
+            <div class="countdown-timer" id="countdownTimer">
+                <span>⏱️ Thời gian còn lại: </span>
+                <strong id="timerDisplay">03:00</strong>
+            </div>
         </div>
 
         <div class="ticket-body">
+            <!-- QR Code Payment -->
+            <div class="ticket-section qr-section">
+                <h4>Quét mã QR để thanh toán</h4>
+                <div class="qr-code-container">
+                    ${booking.qrCode 
+                        ? `<img src="${booking.qrCode}" alt="QR Payment" class="qr-code-image" onerror="this.onerror=null; this.src=''; this.alt='Không thể tải QR code';" />` 
+                        : '<p style="color: red;">❌ Không thể tạo QR code. Vui lòng thử lại.</p>'
+                    }
+                </div>
+                <p class="qr-instruction">
+                    📱 Mở ứng dụng Ngân hàng → Quét QR → Thanh toán
+                </p>
+                <div class="bank-info">
+                    <p><strong>Ngân hàng:</strong> TP Bank</p>
+                    <p><strong>Số tài khoản:</strong> 0921508957</p>
+                    <p><strong>Chủ tài khoản:</strong> VU KHANH NAM</p>
+                    <p><strong>Số tiền:</strong> ${formatPrice(booking.tongTien)}</p>
+                    <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                        💡 Nội dung CK: <strong>VOOBUS ${booking.maDatVe}</strong>
+                    </p>
+                </div>
+            </div>
+
             <!-- Thông tin chuyến đi -->
             <div class="ticket-section">
                 <h4>Thông tin chuyến đi</h4>
                 <div class="ticket-row">
-                    <span class="label">Điểm đi:</span>
-                    <span class="value">${currentRoute.diemDi}</span>
-                </div>
-                <div class="ticket-row">
-                    <span class="label">Điểm đến:</span>
-                    <span class="value">${currentRoute.diemDen}</span>
+                    <span class="label">Tuyến:</span>
+                    <span class="value">${currentRoute.diemDi} → ${currentRoute.diemDen}</span>
                 </div>
                 <div class="ticket-row">
                     <span class="label">Ngày đi:</span>
@@ -495,42 +545,8 @@ async function showTicketInfoModal(booking) {
                     <span class="value">${departTime}</span>
                 </div>
                 <div class="ticket-row">
-                    <span class="label">Giờ đến dự kiến:</span>
-                    <span class="value">${arrivalTime}</span>
-                </div>
-            </div>
-
-            <!-- Thông tin khách hàng -->
-            <div class="ticket-section">
-                <h4>Thông tin khách hàng</h4>
-                <div class="ticket-row">
-                    <span class="label">Họ tên:</span>
-                    <span class="value">${userInfo.hoTen || 'Chưa cập nhật'}</span>
-                </div>
-                <div class="ticket-row">
-                    <span class="label">Email:</span>
-                    <span class="value">${userInfo.email || 'Chưa cập nhật'}</span>
-                </div>
-                <div class="ticket-row">
-                    <span class="label">Số điện thoại:</span>
-                    <span class="value">${userInfo.soDienThoai || 'Chưa cập nhật'}</span>
-                </div>
-            </div>
-
-            <!-- Thông tin vé -->
-            <div class="ticket-section">
-                <h4>Chi tiết vé</h4>
-                <div class="ticket-row">
                     <span class="label">Ghế ngồi:</span>
-                    <span class="value highlight">${booking.gheNgoi.join(', ')}</span>
-                </div>
-                <div class="ticket-row">
-                    <span class="label">Số lượng vé:</span>
-                    <span class="value">${booking.gheNgoi.length} vé</span>
-                </div>
-                <div class="ticket-row">
-                    <span class="label">Đơn giá:</span>
-                    <span class="value">${formatPrice(ticketPrice)}</span>
+                    <span class="value highlight">${booking.soGheNgoi.join(', ')}</span>
                 </div>
                 <div class="ticket-row total">
                     <span class="label">Tổng tiền:</span>
@@ -540,83 +556,174 @@ async function showTicketInfoModal(booking) {
         </div>
 
         <div class="ticket-footer">
-            <button class="btn-payment" onclick="processPayment('${booking.maDatVe}', ${booking.tongTien}, '${userInfo.hoTen}', '${userInfo.email}', '${userInfo.soDienThoai}', '${booking.maKH}', '${JSON.stringify(booking.gheNgoi)}')">
-                💳 Thanh toán
+            <button class="btn-payment" onclick="confirmPayment('${booking.maDatVe}')">
+                ✅ Đã thanh toán
             </button>
-            <button class="btn-cancel" onclick="closeTicketInfoModal()">
-                Hủy
+            <button class="btn-cancel" onclick="cancelPayment('${booking.maDatVe}')">
+                ❌ Hủy đặt vé
             </button>
         </div>
     `;
 
     modal.classList.add('active');
+    
+    // Start countdown timer (3 minutes = 180 seconds)
+    startCountdown(180, booking.maDatVe);
 }
 
-// Close ticket info modal
-function closeTicketInfoModal() {
-    const modal = document.getElementById('ticketInfoModal');
-    modal.classList.remove('active');
+// Countdown timer
+function startCountdown(seconds, maDatVe) {
+    let remaining = seconds;
+    const timerDisplay = document.getElementById('timerDisplay');
+    
+    const interval = setInterval(() => {
+        remaining--;
+        
+        const minutes = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        
+        // Change color when less than 1 minute
+        if (remaining < 60) {
+            timerDisplay.style.color = 'red';
+        }
+        
+        // Time's up
+        if (remaining <= 0) {
+            clearInterval(interval);
+            Toast.warning('⏰ Hết thời gian giữ ghế! Vui lòng đặt lại.', 'Hết thời gian');
+            closeTicketInfoModal();
+            window.location.reload(); // Reload to refresh seat availability
+        }
+    }, 1000);
+    
+    // Store interval ID to clear when user confirms/cancels
+    window.currentBookingTimer = interval;
 }
 
-// Process payment and create invoice
-async function processPayment(maDatVe, tongTien, hoTen, email, soDienThoai, maKH, gheNgoiStr) {
+// Confirm payment - Save to MongoDB
+async function confirmPayment(maDatVe) {
     const token = localStorage.getItem('access_token');
     if (!token) {
-        alert('Vui lòng đăng nhập!');
+        Toast.warning('Vui lòng đăng nhập!', 'Yêu cầu đăng nhập');
         return;
     }
 
-    // Parse gheNgoi from string back to array
-    let gheNgoi = [];
     try {
-        gheNgoi = JSON.parse(gheNgoiStr);
-    } catch (e) {
-        gheNgoi = selectedSeats;
-    }
-
-    try {
-        // Create invoice
-        const response = await fetch(`${API_URL}/routes/invoice/create`, {
+        const response = await fetch(`${API_URL}/api/v1/bookings/payment/confirm`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                maKH: maKH,
-                hoTen: hoTen || 'Khách hàng',
-                email: email,
-                soDienThoai: soDienThoai,
-                maTuyenXe: currentRoute.maTuyenXe,
-                diemDi: currentRoute.diemDi,
-                diemDen: currentRoute.diemDen,
-                gheNgoi: gheNgoi,
-                donGia: ticketPrice,
-                soVeMua: gheNgoi.length,
-                tongTien: tongTien,
-                phuongThucThanhToan: 'Online',
-                ngayDi: searchDate
+                maDatVe: maDatVe
             })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Thanh toán thất bại');
+            throw new Error(error.detail || 'Xác nhận thanh toán thất bại');
         }
 
-        const invoice = await response.json();
+        const result = await response.json();
         
-        alert(`✅ Thanh toán thành công!\n\nMã hóa đơn: ${invoice.maHoaDon}\nTổng tiền: ${formatPrice(invoice.tongTien)}\n\nCảm ơn quý khách đã sử dụng dịch vụ!`);
+        // Clear countdown timer
+        if (window.currentBookingTimer) {
+            clearInterval(window.currentBookingTimer);
+        }
+        
+        Toast.success(`✅ Thanh toán thành công!\n\nMã đặt vé: ${result.maDatVe}\nTổng tiền: ${formatPrice(result.tongTien)}\n\nCảm ơn quý khách!`, 'Thanh toán thành công');
         
         closeTicketInfoModal();
-        
-        // Redirect to home or booking history
-        window.location.href = 'index.html';
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
 
     } catch (error) {
-        console.error('Payment error:', error);
-        alert(error.message || 'Thanh toán thất bại. Vui lòng thử lại!');
+        console.error('Payment confirmation error:', error);
+        Toast.error(error.message || 'Xác nhận thanh toán thất bại. Vui lòng thử lại!', 'Lỗi thanh toán');
     }
+}
+
+// Cancel payment - Release seats from Redis
+async function cancelPayment(maDatVe) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        Toast.warning('Vui lòng đăng nhập!', 'Yêu cầu đăng nhập');
+        return;
+    }
+
+    // Temporarily hide the payment modal to show confirmation dialog clearly
+    const paymentModal = document.getElementById('ticketInfoModal');
+    const wasActive = paymentModal.classList.contains('active');
+    if (wasActive) {
+        paymentModal.style.display = 'none';
+    }
+
+    const confirmed = await Modal.confirm(
+        'Bạn có chắc muốn hủy đặt vé?',
+        'Xác nhận hủy vé',
+        'warning'
+    );
+    
+    // Restore payment modal if user cancels
+    if (!confirmed) {
+        if (wasActive) {
+            paymentModal.style.display = 'flex';
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/v1/bookings/payment/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                maDatVe: maDatVe
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            // Restore payment modal on error
+            if (wasActive) {
+                paymentModal.style.display = 'flex';
+            }
+            throw new Error(error.detail || 'Hủy đặt vé thất bại');
+        }
+
+        // Clear countdown timer
+        if (window.currentBookingTimer) {
+            clearInterval(window.currentBookingTimer);
+        }
+        
+        Toast.info('❌ Đã hủy đặt vé. Ghế đã được giải phóng.', 'Hủy thành công');
+        
+        closeTicketInfoModal();
+        setTimeout(() => {
+            window.location.reload(); // Reload to refresh seat availability
+        }, 1500);
+
+    } catch (error) {
+        console.error('Cancel booking error:', error);
+        Toast.error(error.message || 'Hủy đặt vé thất bại. Vui lòng thử lại!', 'Lỗi hủy vé');
+    }
+}
+
+// Close ticket info modal
+function closeTicketInfoModal() {
+    // Clear countdown timer if exists
+    if (window.currentBookingTimer) {
+        clearInterval(window.currentBookingTimer);
+        window.currentBookingTimer = null;
+    }
+    
+    const modal = document.getElementById('ticketInfoModal');
+    modal.classList.remove('active');
 }
 
 // Format date

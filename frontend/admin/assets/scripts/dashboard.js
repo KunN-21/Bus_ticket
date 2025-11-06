@@ -1411,7 +1411,11 @@ async function deleteCustomer(id) {
   const customer = usersData.customers.find(c => c.maKH === id);
   if (!customer) return;
   
-  const confirmed = confirm(`Bạn có chắc chắn muốn xóa khách hàng "${customer.hoTen}"?`);
+  const confirmed = await Modal.confirm(
+    `Bạn có chắc chắn muốn xóa khách hàng "${customer.hoTen}"?`,
+    'Xác nhận xóa khách hàng',
+    'warning'
+  );
   if (!confirmed) return;
   
   try {
@@ -1444,7 +1448,11 @@ async function deleteEmployee(id) {
   const employee = usersData.employees.find(e => e.maNV === id);
   if (!employee) return;
   
-  const confirmed = confirm(`Bạn có chắc chắn muốn xóa nhân viên "${employee.hoTen}"?`);
+  const confirmed = await Modal.confirm(
+    `Bạn có chắc chắn muốn xóa nhân viên "${employee.hoTen}"?`,
+    'Xác nhận xóa nhân viên',
+    'warning'
+  );
   if (!confirmed) return;
   
   try {

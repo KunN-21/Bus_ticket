@@ -17,9 +17,6 @@ function showToast(type, message, title) {
         } else {
             Toast.info(message, title);
         }
-    } else {
-        // Fallback to alert if Toast not available
-        alert((title ? title + '\n\n' : '') + message);
     }
 }
 

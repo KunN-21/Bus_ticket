@@ -3,11 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core import redis_client, mongodb_client
 from app.config import settings
-from app.routes import auth_router, users_router
+from app.routes import auth_router, users_router, routes_router
 from app.routes.admin_employees import router as admin_employees_router
 from app.routes.admin_customers import router as admin_customers_router
 from app.routes.roles import router as roles_router
-# from app.routes import tickets_router, bookings_router, payments_router
+from app.routes.bookings import router as bookings_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,6 +47,8 @@ app.include_router(users_router)
 app.include_router(admin_employees_router)
 app.include_router(admin_customers_router)
 app.include_router(roles_router)
+app.include_router(routes_router)
+app.include_router(bookings_router)
 
 @app.get("/")
 async def root():

@@ -342,3 +342,81 @@
         font-size: 0.9rem;
     }
 }
+
+/* ==================== QR CODE PAYMENT STYLES ==================== */
+.qr-section {
+    text-align: center;
+    padding: 25px 20px;
+    background: linear-gradient(135deg, #fff5f0 0%, #ffffff 100%);
+    border-radius: 12px;
+    border: 2px solid rgba(255, 102, 0, 0.2);
+}
+
+.qr-code-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.qr-code-image {
+    max-width: 300px;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.qr-instruction {
+    font-size: 1rem;
+    color: var(--futa-orange);
+    font-weight: 600;
+    margin: 15px 0;
+}
+
+.bank-info {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 1px solid rgba(255, 102, 0, 0.15);
+}
+
+.bank-info p {
+    margin: 8px 0;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+}
+
+.bank-info strong {
+    color: var(--futa-orange);
+    font-weight: 600;
+}
+
+.countdown-timer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-radius: 8px;
+    margin-top: 15px;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.countdown-timer strong {
+    font-size: 1.3rem;
+    color: var(--futa-orange);
+    font-weight: 700;
+    min-width: 60px;
+    text-align: center;
+}
+
+.countdown-timer span {
+    color: #555;
+}

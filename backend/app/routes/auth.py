@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime
 from app.core import mongodb_client
 from app.models import (
@@ -19,6 +19,7 @@ from app.services.otp_service import (
     delete_registration_step
 )
 from app.core import hash_password, verify_password, create_access_token
+from app.core.middleware import get_current_customer
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -316,4 +317,38 @@ async def resend_otp(request: RegisterInitiate):
     return {
         "message": "OTP mới đã được gửi đến email của bạn",
         "email": request.email
+    }
+
+
+# ========== GET CURRENT USER INFO ==========
+
+@router.get("/me")
+async def get_current_user(current_user: dict = Depends(get_current_customer)):
+    """
+    Get current logged in user information
+    Returns user profile with soDienThoai field mapped from SDT
+    """
+    db = mongodb_client.get_db()
+    
+    # Get full user info from database
+    user = await db.khachhang.find_one({"maKH": current_user["maKH"]})
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy thông tin người dùng"
+        )
+    
+    # Remove sensitive fields
+    user.pop("password", None)
+    user.pop("_id", None)
+    
+    # Map SDT to soDienThoai for frontend compatibility
+    return {
+        "maKH": user.get("maKH", ""),
+        "hoTen": user.get("hoTen", ""),
+        "email": user.get("email", ""),
+        "soDienThoai": user.get("SDT", ""),  
+        "CCCD": user.get("CCCD", ""),
+        "diaChi": user.get("diaChi", "")
     }

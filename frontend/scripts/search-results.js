@@ -110,7 +110,7 @@ function displayResults(routes) {
     loadingDiv.style.display = 'none';
 
     if (routes.length === 0) {
-        noResultsDiv.style.display = 'block';
+        noResultsDiv.style.display = 'none';
         return;
     }
 
@@ -239,11 +239,13 @@ async function selectRoute(route) {
 // Open seat selection modal
 function openSeatModal(routeDetails) {
     const modal = document.getElementById('seatModal');
-    const seatLayout = document.getElementById('seatLayout');
+    const seatLayoutLower = document.getElementById('seatLayoutLower');
+    const seatLayoutUpper = document.getElementById('seatLayoutUpper');
     
     // Reset
     selectedSeats = [];
-    seatLayout.innerHTML = '';
+    seatLayoutLower.innerHTML = '';
+    seatLayoutUpper.innerHTML = '';
 
     // Display route info
     const routeInfo = document.getElementById('routeInfo');
@@ -252,30 +254,95 @@ function openSeatModal(routeDetails) {
     const duration = routeDetails.thoiGianQuangDuong || 'Chưa xác định';
     const loaiXe = (routeDetails.xe && routeDetails.xe.loaiXe) ? routeDetails.xe.loaiXe : 'Chưa có thông tin';
     
-    routeInfo.innerHTML = `
-        <p style="margin: 10px 0;"><strong>Tuyến:</strong> ${routeDetails.diemDi} → ${routeDetails.diemDen}</p>
-        <p style="margin: 10px 0;"><strong>Xuất bến:</strong> ${departTime}</p>
-        <p style="margin: 10px 0;"><strong>Đến dự kiến:</strong> ${arrivalTime}</p>
-        <p style="margin: 10px 0;"><strong>Thời gian:</strong> ${duration}</p>
-        <p style="margin: 10px 0;"><strong>Loại xe:</strong> ${loaiXe}</p>
-    `;
-
-    // Render seats
+    // Separate seats into lower and upper floors based on seat number
+    const lowerFloorSeats = [];
+    const upperFloorSeats = [];
+    
     routeDetails.gheNgoi.forEach(seat => {
-        const seatDiv = document.createElement('div');
-        seatDiv.className = `seat ${seat.trangThai ? 'booked' : 'available'}`;
-        seatDiv.textContent = seat.maGhe;
-        seatDiv.dataset.seatId = seat.maGhe;
-
-        if (!seat.trangThai) {
-            seatDiv.onclick = () => toggleSeat(seat.maGhe);
+        const seatCode = seat.maGhe;
+        
+        // Extract number from seat code (e.g., A01 -> 1, A17 -> 17)
+        const seatNumber = parseInt(seatCode.replace(/[A-Z]/g, ''));
+        
+        // A01-A17 = lower floor, A18-A34 = upper floor
+        if (seatNumber >= 1 && seatNumber <= 17) {
+            lowerFloorSeats.push(seat);
+        } else if (seatNumber >= 18 && seatNumber <= 34) {
+            upperFloorSeats.push(seat);
+        } else {
+            // Default to lower floor if doesn't match pattern
+            lowerFloorSeats.push(seat);
         }
+    });
 
-        seatLayout.appendChild(seatDiv);
+    // Render lower floor seats with spacing for first row
+    lowerFloorSeats.forEach((seat, index) => {
+        const seatNumber = parseInt(seat.maGhe.replace(/[A-Z]/g, ''));
+        
+        // Add seat A01
+        if (seatNumber === 1) {
+            const seatDiv = createSeatElement(seat);
+            seatLayoutLower.appendChild(seatDiv);
+            
+            // Add empty space
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'seat seat-empty';
+            seatLayoutLower.appendChild(emptyDiv);
+        }
+        // Add seat A02 (skip A01 since already added)
+        else if (seatNumber === 2) {
+            const seatDiv = createSeatElement(seat);
+            seatLayoutLower.appendChild(seatDiv);
+        }
+        // Normal seats A03-A17
+        else if (seatNumber >= 3 && seatNumber <= 17) {
+            const seatDiv = createSeatElement(seat);
+            seatLayoutLower.appendChild(seatDiv);
+        }
+    });
+
+    // Render upper floor seats with spacing for first row
+    upperFloorSeats.forEach((seat, index) => {
+        const seatNumber = parseInt(seat.maGhe.replace(/[A-Z]/g, ''));
+        
+        // Add seat A18
+        if (seatNumber === 18) {
+            // Add empty space first
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'seat seat-empty';
+            seatLayoutUpper.appendChild(emptyDiv);
+            
+            const seatDiv = createSeatElement(seat);
+            seatLayoutUpper.appendChild(seatDiv);
+        }
+        // Add seat A19
+        else if (seatNumber === 19) {
+            const seatDiv = createSeatElement(seat);
+            seatLayoutUpper.appendChild(seatDiv);
+        }
+        // Normal seats A20-A34
+        else if (seatNumber >= 20 && seatNumber <= 34) {
+            const seatDiv = createSeatElement(seat);
+            seatLayoutUpper.appendChild(seatDiv);
+        }
     });
 
     modal.classList.add('active');
     updateBookingSummary();
+}
+
+// Create seat element
+function createSeatElement(seat) {
+    const seatDiv = document.createElement('div');
+    seatDiv.className = `seat ${seat.trangThai ? 'booked' : 'available'}`;
+    seatDiv.textContent = seat.maGhe;
+    seatDiv.dataset.seatId = seat.maGhe;
+
+    if (!seat.trangThai) {
+        seatDiv.onclick = () => toggleSeat(seat.maGhe);
+    }
+
+    return seatDiv;
 }
 
 // Close modal
@@ -338,6 +405,13 @@ async function confirmBooking() {
         return;
     }
 
+    console.log('Booking data:', {
+        maTuyenXe: currentRoute.maTuyenXe,
+        gheNgoi: selectedSeats,
+        tongTien: ticketPrice * selectedSeats.length,
+        ngayDi: searchDate
+    });
+
     try {
         const response = await fetch(`${API_URL}/routes/book`, {
             method: 'POST',
@@ -355,17 +429,15 @@ async function confirmBooking() {
 
         if (!response.ok) {
             const error = await response.json();
+            console.error('Booking error response:', error);
             throw new Error(error.detail || 'Đặt vé thất bại');
         }
 
         const booking = await response.json();
         
-        alert(`Đặt vé thành công!\nMã đặt vé: ${booking.maDatVe}\nTổng tiền: ${formatPrice(booking.tongTien)}`);
-        
+        // Close seat modal and show ticket info modal
         closeSeatModal();
-        
-        // Redirect to booking history or payment page
-        // window.location.href = 'my-bookings.html';
+        showTicketInfoModal(booking);
 
     } catch (error) {
         console.error('Booking error:', error);
@@ -373,10 +445,194 @@ async function confirmBooking() {
     }
 }
 
+// Show ticket info modal
+async function showTicketInfoModal(booking) {
+    // Get user info
+    const token = localStorage.getItem('access_token');
+    let userInfo = { hoTen: '', email: '', soDienThoai: '' };
+    
+    try {
+        const response = await fetch(`${API_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            userInfo = await response.json();
+        }
+    } catch (error) {
+        console.error('Error fetching user info:', error);
+    }
+
+    const modal = document.getElementById('ticketInfoModal');
+    const ticketInfo = document.getElementById('ticketInfoContent');
+    
+    const departTime = currentRoute.thoiGianXuatBen || 'Chưa xác định';
+    const arrivalTime = currentRoute.thoiGianDenDuKien || 'Chưa xác định';
+    
+    ticketInfo.innerHTML = `
+        <div class="ticket-header">
+            <h3>THÔNG TIN VÉ XE</h3>
+            <p class="ticket-code">Mã đặt vé: <strong>${booking.maDatVe}</strong></p>
+        </div>
+
+        <div class="ticket-body">
+            <!-- Thông tin chuyến đi -->
+            <div class="ticket-section">
+                <h4>Thông tin chuyến đi</h4>
+                <div class="ticket-row">
+                    <span class="label">Điểm đi:</span>
+                    <span class="value">${currentRoute.diemDi}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="label">Điểm đến:</span>
+                    <span class="value">${currentRoute.diemDen}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="label">Ngày đi:</span>
+                    <span class="value">${formatDate(searchDate)}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="label">Giờ xuất bến:</span>
+                    <span class="value">${departTime}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="label">Giờ đến dự kiến:</span>
+                    <span class="value">${arrivalTime}</span>
+                </div>
+            </div>
+
+            <!-- Thông tin khách hàng -->
+            <div class="ticket-section">
+                <h4>Thông tin khách hàng</h4>
+                <div class="ticket-row">
+                    <span class="label">Họ tên:</span>
+                    <span class="value">${userInfo.hoTen || 'Chưa cập nhật'}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="label">Email:</span>
+                    <span class="value">${userInfo.email || 'Chưa cập nhật'}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="label">Số điện thoại:</span>
+                    <span class="value">${userInfo.soDienThoai || 'Chưa cập nhật'}</span>
+                </div>
+            </div>
+
+            <!-- Thông tin vé -->
+            <div class="ticket-section">
+                <h4>Chi tiết vé</h4>
+                <div class="ticket-row">
+                    <span class="label">Ghế ngồi:</span>
+                    <span class="value highlight">${booking.gheNgoi.join(', ')}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="label">Số lượng vé:</span>
+                    <span class="value">${booking.gheNgoi.length} vé</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="label">Đơn giá:</span>
+                    <span class="value">${formatPrice(ticketPrice)}</span>
+                </div>
+                <div class="ticket-row total">
+                    <span class="label">Tổng tiền:</span>
+                    <span class="value">${formatPrice(booking.tongTien)}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ticket-footer">
+            <button class="btn-payment" onclick="processPayment('${booking.maDatVe}', ${booking.tongTien}, '${userInfo.hoTen}', '${userInfo.email}', '${userInfo.soDienThoai}', '${booking.maKH}', '${JSON.stringify(booking.gheNgoi)}')">
+                💳 Thanh toán
+            </button>
+            <button class="btn-cancel" onclick="closeTicketInfoModal()">
+                Hủy
+            </button>
+        </div>
+    `;
+
+    modal.classList.add('active');
+}
+
+// Close ticket info modal
+function closeTicketInfoModal() {
+    const modal = document.getElementById('ticketInfoModal');
+    modal.classList.remove('active');
+}
+
+// Process payment and create invoice
+async function processPayment(maDatVe, tongTien, hoTen, email, soDienThoai, maKH, gheNgoiStr) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        alert('Vui lòng đăng nhập!');
+        return;
+    }
+
+    // Parse gheNgoi from string back to array
+    let gheNgoi = [];
+    try {
+        gheNgoi = JSON.parse(gheNgoiStr);
+    } catch (e) {
+        gheNgoi = selectedSeats;
+    }
+
+    try {
+        // Create invoice
+        const response = await fetch(`${API_URL}/routes/invoice/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                maKH: maKH,
+                hoTen: hoTen || 'Khách hàng',
+                email: email,
+                soDienThoai: soDienThoai,
+                maTuyenXe: currentRoute.maTuyenXe,
+                diemDi: currentRoute.diemDi,
+                diemDen: currentRoute.diemDen,
+                gheNgoi: gheNgoi,
+                donGia: ticketPrice,
+                soVeMua: gheNgoi.length,
+                tongTien: tongTien,
+                phuongThucThanhToan: 'Online',
+                ngayDi: searchDate
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Thanh toán thất bại');
+        }
+
+        const invoice = await response.json();
+        
+        alert(`✅ Thanh toán thành công!\n\nMã hóa đơn: ${invoice.maHoaDon}\nTổng tiền: ${formatPrice(invoice.tongTien)}\n\nCảm ơn quý khách đã sử dụng dịch vụ!`);
+        
+        closeTicketInfoModal();
+        
+        // Redirect to home or booking history
+        window.location.href = 'index.html';
+
+    } catch (error) {
+        console.error('Payment error:', error);
+        alert(error.message || 'Thanh toán thất bại. Vui lòng thử lại!');
+    }
+}
+
+// Format date
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('vi-VN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+}
+
 // Show no results
 function showNoResults() {
     document.getElementById('loadingDiv').style.display = 'none';
-    document.getElementById('noResultsDiv').style.display = 'block';
+    document.getElementById('noResultsDiv').style.display = 'none';
 }
 
 // Format price

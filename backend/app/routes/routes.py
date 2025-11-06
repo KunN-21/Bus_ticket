@@ -6,7 +6,9 @@ from ..models.routes import (
     RouteSearchResponse, 
     BookingRequest, 
     BookingResponse,
-    BusRoute
+    BusRoute,
+    HoaDonRequest,
+    HoaDonResponse
 )
 from ..core.database import get_database
 from ..core.middleware import get_current_customer
@@ -228,7 +230,8 @@ async def book_ticket(booking: BookingRequest, current_user: dict = Depends(get_
             gheNgoi=booking.gheNgoi,
             tongTien=booking.tongTien,
             trangThai="pending",
-            ngayDat=booking_doc["ngayDat"]
+            ngayDat=booking_doc["ngayDat"],
+            ngayDi=booking.ngayDi
         )
     
     except HTTPException:
@@ -258,10 +261,78 @@ async def get_my_bookings(current_user: dict = Depends(get_current_customer)):
                 gheNgoi=booking["gheNgoi"],
                 tongTien=booking["tongTien"],
                 trangThai=booking["trangThai"],
-                ngayDat=booking["ngayDat"]
+                ngayDat=booking["ngayDat"],
+                ngayDi=booking.get("ngayDi")
             ))
         
         return result
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi lấy lịch sử: {str(e)}")
+
+
+@router.post("/invoice/create", response_model=HoaDonResponse)
+async def create_invoice(hoadon: HoaDonRequest, current_user: dict = Depends(get_current_customer)):
+    """
+    Tạo hóa đơn sau khi thanh toán thành công
+    """
+    try:
+        db = await get_database()
+        
+        # Verify customer
+        if hoadon.maKH != current_user["maKH"]:
+            raise HTTPException(status_code=403, detail="Không có quyền tạo hóa đơn cho khách hàng khác")
+        
+        # Tạo mã hóa đơn
+        last_invoice = await db.hoaDon.find_one(sort=[("maHoaDon", -1)])
+        if last_invoice and last_invoice.get("maHoaDon"):
+            try:
+                last_num = int(last_invoice["maHoaDon"][2:])
+                ma_hoa_don = f"HD{str(last_num + 1).zfill(5)}"
+            except:
+                ma_hoa_don = "HD00001"
+        else:
+            ma_hoa_don = "HD00001"
+        
+        # Tạo hóa đơn document
+        ngay_lap = datetime.now()
+        invoice_doc = {
+            "maHoaDon": ma_hoa_don,
+            "ngayLap": ngay_lap,
+            "khachhang": {
+                "hoTen": hoadon.hoTen,
+                "maKH": hoadon.maKH
+            },
+            "phuongThucThanhToan": hoadon.phuongThucThanhToan,
+            "tongTien": hoadon.tongTien,
+            "tuyenXe": {
+                "maTuyenXe": hoadon.maTuyenXe,
+                "diemDi": hoadon.diemDi,
+                "diemDen": hoadon.diemDen
+            },
+            "donGia": hoadon.donGia,
+            "soVeMua": hoadon.soVeMua,
+            "gheNgoi": hoadon.gheNgoi,
+            "ngayDi": hoadon.ngayDi
+        }
+        
+        # Lưu vào database
+        await db.hoaDon.insert_one(invoice_doc)
+        
+        return HoaDonResponse(
+            maHoaDon=ma_hoa_don,
+            ngayLap=ngay_lap,
+            khachhang=invoice_doc["khachhang"],
+            phuongThucThanhToan=hoadon.phuongThucThanhToan,
+            tongTien=hoadon.tongTien,
+            tuyenXe=invoice_doc["tuyenXe"],
+            donGia=hoadon.donGia,
+            soVeMua=hoadon.soVeMua,
+            gheNgoi=hoadon.gheNgoi
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi tạo hóa đơn: {str(e)}")
+

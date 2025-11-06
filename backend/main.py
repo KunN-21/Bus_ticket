@@ -58,8 +58,8 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    redis_status = "connected" if redis_client.get_client() else "disconnected"
-    mongo_status = "connected" if mongodb_client.get_db() else "disconnected"
+    redis_status = "connected" if redis_client.get_client() is not None else "disconnected"
+    mongo_status = "connected" if mongodb_client.get_db() is not None else "disconnected"
     
     return {
         "status": "healthy",

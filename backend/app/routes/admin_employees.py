@@ -7,7 +7,8 @@ employees using the Pydantic models defined in `app.models.users` and the
 `maChucVu` codes and validate against the `chucvu` collection.
 
 Notes:
-- Only admins can access these endpoints (depends on `get_current_admin`).
+- View: Admin and Employee (CV002) can view employee list.
+- Create/Update/Delete: Only Admin (CV001) can perform these actions.
 - Passwords are hashed and never returned in responses.
 - Responses include `chucVuInfo` populated from `chucvu` collection.
 """
@@ -121,6 +122,15 @@ async def update_employee(maNV: str, payload: EmployeeUpdate, current_admin: dic
     if payload.SDT: update["SDT"] = payload.SDT
     if payload.diaChi: update["diaChi"] = payload.diaChi
     if payload.password: update["password"] = hash_password(payload.password)
+
+    # Check email uniqueness across both collections
+    if payload.email:
+        if payload.email != existing.get("email"):
+            if await db.nhanvien.find_one({"email": payload.email}):
+                raise HTTPException(status_code=400, detail="Email đã được sử dụng bởi nhân viên khác")
+            if await db.khachhang.find_one({"email": payload.email}):
+                raise HTTPException(status_code=400, detail="Email đã được sử dụng bởi khách hàng")
+        update["email"] = payload.email
 
     if payload.CCCD:
         if payload.CCCD != existing.get("CCCD") and await db.nhanvien.find_one({"CCCD": payload.CCCD}):

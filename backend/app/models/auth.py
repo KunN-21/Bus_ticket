@@ -4,7 +4,7 @@ from datetime import datetime
 
 # ========== NHAN VIEN (Employee) ==========
 class NhanVienBase(BaseModel):
-    maNV: str
+    maNV: Optional[str] = None
     maChucVu: str
     hoTen: str
     email: str
@@ -29,7 +29,7 @@ class NhanVienResponse(NhanVienBase):
 
 # ========== KHACH HANG (Customer) ==========
 class KhachHangBase(BaseModel):
-    maKH: str
+    maKH: Optional[str] = None
     hoTen: str
     SDT: str
     email: str

@@ -46,13 +46,11 @@ class RouteSearchResponse(BaseModel):
 
 class BookingRequest(BaseModel):
     maTuyenXe: str
-    maKH: Optional[str]
-    gheNgoi: List[str]  # danh sách mã ghế: ["A1", "A2"]
+    gheNgoi: List[str]  
     tongTien: float
     ngayDi: str  # YYYY-MM-DD
 
 class BookingResponse(BaseModel):
-    """Response sau khi đặt vé"""
     maDatVe: str
     maTuyenXe: str
     maKH: str
@@ -61,3 +59,31 @@ class BookingResponse(BaseModel):
     trangThai: str  # "pending", "confirmed", "cancelled"
     ngayDat: datetime
     ngayDi: Optional[str]
+
+class HoaDonRequest(BaseModel):
+    """Request tạo hóa đơn"""
+    maKH: str
+    hoTen: str
+    email: Optional[str]
+    SDT: str
+    maTuyenXe: str
+    diemDi: str
+    diemDen: str
+    gheNgoi: List[str]
+    donGia: float
+    soVeMua: int
+    tongTien: float
+    phuongThucThanhToan: str  # "Online" or "Cash"
+    ngayDi: str
+
+class HoaDonResponse(BaseModel):
+    """Response hóa đơn"""
+    maHoaDon: str
+    ngayLap: datetime
+    khachhang: dict  # {"hoTen": str, "maKH": str}
+    phuongThucThanhToan: str
+    tongTien: float
+    tuyenXe: dict  # {"maTuyenXe": str, "diemDi": str, "diemDen": str}
+    donGia: float
+    soVeMua: int
+    gheNgoi: List[str]

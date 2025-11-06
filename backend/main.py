@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core import redis_client, mongodb_client
 from app.config import settings
-from app.routes import auth_router, users_router
+from app.routes import auth_router, users_router, routes_router
 # from app.routes import tickets_router, bookings_router, payments_router
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(routes_router)
 
 @app.get("/")
 async def root():

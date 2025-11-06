@@ -110,8 +110,6 @@ async function loadAllRoutes() {
         
         if (typeof Toast !== 'undefined') {
             Toast.error('Không thể tải danh sách tuyến xe. Vui lòng thử lại sau.', 'Lỗi');
-        } else {
-            alert('Không thể tải danh sách tuyến xe: ' + error.message);
         }
     }
 }
@@ -350,8 +348,8 @@ function viewRouteDetail(route) {
 
     if (typeof Modal !== 'undefined') {
         Modal.info(details, `Chi tiết tuyến ${route.maTuyenXe}`);
-    } else {
-        alert(details);
+    } else if (typeof Toast !== 'undefined') {
+        Toast.info(details, `Chi tiết tuyến ${route.maTuyenXe}`);
     }
 }
 
@@ -364,8 +362,6 @@ function bookRoute(event, maTuyenXe) {
     if (!route) {
         if (typeof Toast !== 'undefined') {
             Toast.error('Không tìm thấy tuyến xe', 'Lỗi');
-        } else {
-            alert('Không tìm thấy tuyến xe');
         }
         return;
     }

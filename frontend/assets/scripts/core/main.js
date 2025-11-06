@@ -225,7 +225,9 @@ function searchTickets(event) {
     
     // Display errors or submit
     if (errors.length > 0) {
-        alert(errors.join('\n'));
+        if (typeof Toast !== 'undefined') {
+            Toast.warning(errors.join('\n'), 'Lỗi nhập liệu');
+        }
     } else {
         // Get city names
         const fromText = document.querySelector(`#from option[value="${from}"]`).textContent;
@@ -263,7 +265,12 @@ function formatDate(dateString) {
 // Open authentication modal (show login by default)
 function openLoginModal(tab = 'login') {
     const section = document.getElementById('authSection');
-    if (!section) return alert('Khu vực đăng nhập chưa sẵn sàng');
+    if (!section) {
+        if (typeof Toast !== 'undefined') {
+            Toast.error('Khu vực đăng nhập chưa sẵn sàng', 'Lỗi');
+        }
+        return;
+    }
     section.classList.add('visible');
     section.setAttribute('aria-hidden','false');
     // switch tab and scroll into view
@@ -308,7 +315,10 @@ async function handleLoginSubmit(e){
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
     if (!email || !password){
-        return alert('Vui lòng nhập email và mật khẩu');
+        if (typeof Toast !== 'undefined') {
+            Toast.warning('Vui lòng nhập email và mật khẩu', 'Thông tin chưa đầy đủ');
+        }
+        return;
     }
 
     // Login will be handled by auth.js on auth.html page
@@ -319,7 +329,10 @@ async function handleRegisterSubmit(e){
     e.preventDefault();
     const email = document.getElementById('regEmail').value.trim();
     if (!email){
-        return alert('Vui lòng nhập email đăng ký');
+        if (typeof Toast !== 'undefined') {
+            Toast.warning('Vui lòng nhập email đăng ký', 'Thiếu email');
+        }
+        return;
     }
 
     // Register will be handled by auth.js on auth.html page

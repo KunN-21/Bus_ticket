@@ -53,17 +53,23 @@ function searchTickets(event) {
 
     // Validation
     if (!from || !to || !departDate) {
-        alert('Vui lòng điền đầy đủ thông tin!');
+        if (typeof Toast !== 'undefined') {
+            Toast.warning('Vui lòng điền đầy đủ thông tin!', 'Thông tin chưa đầy đủ');
+        }
         return;
     }
 
     if (from === to) {
-        alert('Điểm đi và điểm đến không được trùng nhau!');
+        if (typeof Toast !== 'undefined') {
+            Toast.warning('Điểm đi và điểm đến không được trùng nhau!', 'Lỗi chọn điểm');
+        }
         return;
     }
 
     if (tripType === 'round-trip' && !returnDate) {
-        alert('Vui lòng chọn ngày về!');
+        if (typeof Toast !== 'undefined') {
+            Toast.warning('Vui lòng chọn ngày về!', 'Thiếu ngày về');
+        }
         return;
     }
 

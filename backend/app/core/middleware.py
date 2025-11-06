@@ -102,8 +102,10 @@ async def get_current_admin(authorization: str = Header(None)):
             detail="Access denied. Employee account required."
         )
     
-    # Check if employee has admin role
-    if payload.get("role") != "admin":
+    # Check if employee has admin role (CV001 = admin, CV002 = employee)
+    # Accept both "cv001" and "admin" for backward compatibility
+    user_role = payload.get("role", "").lower()
+    if user_role not in ["cv001", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Admin privileges required."

@@ -133,7 +133,7 @@
         #routesList {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
             margin-top: -500px;
         }
 
@@ -146,8 +146,7 @@
             border: 1px solid #F5F5F5;
             transition: all 0.3s ease;
             max-width: 720px;
-
-            margin-left: 400px;
+            margin-left: 450px;
         }
 
         .route-card:hover {
@@ -286,7 +285,7 @@
 
         .seats-available {
             color: #00C48C;
-            font-weight: 600;
+            font-weight: 400;
         }
 
         /* Trip Footer */
@@ -418,46 +417,158 @@
             height: 30px;
         }
 
-        .seat-layout {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-            gap: 10px;
+        /* Seat Legend */
+        .seat-legend {
+            display: flex;
+            gap: 24px;
             margin: 20px 0;
+            padding: 16px;
+            background: #F8F9FA;
+            border-radius: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
-        .seat {
-            aspect-ratio: 1;
-            border: 2px solid #E0E0E0;
-            border-radius: 8px;
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 11px;
             font-weight: 600;
+        }
+
+        .legend-box.available {
+            background: #D1F2EB;
+            color: #00695C;
+            border: 2px solid #80CBC4;
+        }
+
+        .legend-box.selected {
+            background: #FF6B35;
+            color: white;
+            border: 2px solid #FF6B35;
+        }
+
+        .legend-box.booked {
+            background: #E0E0E0;
+            color: #999;
+            border: 2px solid #BDBDBD;
+        }
+
+        .legend-text {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* Floor Layout */
+        .floor-container {
+            margin: 20px 0;
+        }
+
+        .floor-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
+            padding-left: 8px;
+            border-left: 4px solid #FF6B35;
+        }
+
+        .floors-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .seat-layout {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #E0E0E0;
+            justify-content: center;
+        }
+
+        .seat {
+            width: 60px;
+            height: 60px;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 15px;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
+            min-height: 20px;
+        }
+
+        .seat::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 4px;
+            border-radius: 2px 2px 0 0;
+        }
+
+        /* Empty space for layout */
+        .seat-empty {
+            visibility: hidden;
         }
 
         .seat.available {
-            background: white;
-            color: #666;
+            background: #D1F2EB;
+            color: #00695C;
+            border: 2px solid #80CBC4;
+        }
+
+        .seat.available::before {
+            background: #A7E1D6;
         }
 
         .seat.available:hover {
-            border-color: #E85A4F;
-            background: #FFF5F3;
+            background: #B2EBF2;
+            border-color: #4DD0E1;
+            transform: scale(1.05);
         }
 
         .seat.selected {
-            background: #E85A4F;
+            background: #FF6B35;
             color: white;
-            border-color: #E85A4F;
+            border: 2px solid #FF6B35;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .seat.selected::before {
+            background: #FF8A5B;
         }
 
         .seat.booked {
-            background: #F0F0F0;
+            background: #E0E0E0;
             color: #999;
             cursor: not-allowed;
-            border-color: #E0E0E0;
+            border: 2px solid #BDBDBD;
+        }
+
+        .seat.booked::before {
+            background: #BDBDBD;
         }
 
         .booking-summary {
@@ -506,6 +617,155 @@
         .btn-confirm:disabled {
             background: #CCC;
             cursor: not-allowed;
+        }
+
+        /* Ticket Info Modal */
+        #ticketInfoModal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        #ticketInfoModal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #ticketInfoContent {
+            background: white;
+            border-radius: 16px;
+            padding: 0;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .ticket-header {
+            background: linear-gradient(135deg, #FF6B35, #FF8A5B);
+            color: white;
+            padding: 24px;
+            border-radius: 16px 16px 0 0;
+            text-align: center;
+        }
+
+        .ticket-header h3 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+
+        .ticket-code {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .ticket-body {
+            padding: 24px;
+        }
+
+        .ticket-section {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #E0E0E0;
+        }
+
+        .ticket-section:last-child {
+            border-bottom: none;
+        }
+
+        .ticket-section h4 {
+            margin: 0 0 16px 0;
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .ticket-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .ticket-row .label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .ticket-row .value {
+            color: #333;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .ticket-row .value.highlight {
+            color: #FF6B35;
+            font-size: 16px;
+        }
+
+        .ticket-row.total {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 2px solid #FF6B35;
+        }
+
+        .ticket-row.total .label,
+        .ticket-row.total .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #FF6B35;
+        }
+
+        .ticket-footer {
+            padding: 20px 24px;
+            background: #F8F8F8;
+            border-radius: 0 0 16px 16px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-payment {
+            flex: 1;
+            padding: 14px;
+            background: linear-gradient(135deg, #00C48C, #00D68F);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-payment:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 196, 140, 0.3);
+        }
+
+        .btn-cancel {
+            padding: 14px 24px;
+            background: white;
+            color: #666;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cancel:hover {
+            background: #F5F5F5;
+            border-color: #CCC;
         }
 
         @media (max-width: 768px) {
@@ -748,12 +1008,6 @@
                 <p>🔍 Đang tìm kiếm chuyến xe...</p>
             </div>
 
-            <!-- No Results -->
-            <div id="noResultsDiv" class="no-results" style="display: none;">
-                <h3>😔 Không tìm thấy chuyến xe phù hợp</h3>
-                <p>Vui lòng thử tìm kiếm với điểm đi/đến hoặc ngày khác</p>
-            </div>
-
             <!-- Results Content with Filter -->
             <div id="resultsDiv" class="results-content" style="display: none;">
                 <!-- Time Filter Sidebar -->
@@ -813,7 +1067,35 @@
 
             <div id="routeInfo"></div>
 
-            <div class="seat-layout" id="seatLayout"></div>
+            <!-- Seat Legend -->
+            <div class="seat-legend">
+                <div class="legend-item">
+                    <div class="legend-box available"></div>
+                    <span class="legend-text">Còn trống</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box selected"></div>
+                    <span class="legend-text">Đang chọn</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box booked"></div>
+                    <span class="legend-text">Đã bán</span>
+                </div>
+            </div>
+
+            <!-- Lower Floor -->
+            <div class="floors-wrapper">
+                <div class="floor-container">
+                    <div class="floor-title">Tầng dưới</div>
+                    <div class="seat-layout" id="seatLayoutLower"></div>
+                </div>
+
+                <!-- Upper Floor -->
+                <div class="floor-container">
+                    <div class="floor-title">Tầng trên</div>
+                    <div class="seat-layout" id="seatLayoutUpper"></div>
+                </div>
+            </div>
 
             <div class="booking-summary">
                 <div class="summary-row">
@@ -832,6 +1114,13 @@
                     Xác nhận đặt vé
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Ticket Info Modal -->
+    <div id="ticketInfoModal" class="modal">
+        <div id="ticketInfoContent">
+            <!-- Content will be dynamically generated -->
         </div>
     </div>
 

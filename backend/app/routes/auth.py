@@ -347,7 +347,7 @@ async def get_current_user(current_user: dict = Depends(get_current_customer)):
         "maKH": user.get("maKH", ""),
         "hoTen": user.get("hoTen", ""),
         "email": user.get("email", ""),
-        "SDT": user.get("SDT", ""),  
+        "soDienThoai": user.get("SDT", ""),  
         "CCCD": user.get("CCCD", ""),
         "diaChi": user.get("diaChi", "")
     }

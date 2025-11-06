@@ -94,7 +94,90 @@ document.addEventListener('DOMContentLoaded', () => {
     if (returnDateInput) {
         returnDateInput.min = todayString;
     }
+
+    // Load cities for dropdown
+    loadCities();
+
+    // Check if user came from schedule page with pre-selected route
+    const selectedRoute = sessionStorage.getItem('selectedRoute');
+    if (selectedRoute) {
+        try {
+            const route = JSON.parse(selectedRoute);
+            
+            // Wait a bit for cities to load, then pre-fill
+            setTimeout(() => {
+                const fromSelect = document.getElementById('from');
+                const toSelect = document.getElementById('to');
+                
+                if (fromSelect && toSelect) {
+                    // Set values directly (city names are now values)
+                    fromSelect.value = route.from;
+                    toSelect.value = route.to;
+                    
+                    console.log(`✅ Pre-filled booking form: ${route.from} → ${route.to}`);
+                    
+                    // Scroll to booking form
+                    const bookingCard = document.querySelector('.booking-card');
+                    if (bookingCard) {
+                        bookingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }, 500); // Wait 500ms for cities to load
+            
+            // Clear session storage after use
+            sessionStorage.removeItem('selectedRoute');
+        } catch (e) {
+            console.error('Error parsing selected route:', e);
+        }
+    }
 });
+
+// Load cities from API
+async function loadCities() {
+    try {
+        const response = await fetch('http://localhost:8000/routes/cities');
+        if (!response.ok) {
+            throw new Error('Failed to load cities');
+        }
+        
+        const cities = await response.json();
+        
+        const fromSelect = document.getElementById('from');
+        const toSelect = document.getElementById('to');
+        
+        if (fromSelect && toSelect) {
+            // Clear existing options (except first placeholder)
+            fromSelect.innerHTML = '<option value="">Chọn điểm đi</option>';
+            toSelect.innerHTML = '<option value="">Chọn điểm đến</option>';
+            
+            // Add cities
+            cities.forEach(city => {
+                const fromOption = document.createElement('option');
+                fromOption.value = city;
+                fromOption.textContent = city;
+                fromSelect.appendChild(fromOption);
+                
+                const toOption = document.createElement('option');
+                toOption.value = city;
+                toOption.textContent = city;
+                toSelect.appendChild(toOption);
+            });
+            
+            // Set default values if cities include them
+            if (cities.includes('TP Hồ Chí Minh')) {
+                fromSelect.value = 'TP Hồ Chí Minh';
+            }
+            if (cities.includes('Đà Lạt')) {
+                toSelect.value = 'Đà Lạt';
+            }
+            
+            console.log(`✅ Loaded ${cities.length} cities`);
+        }
+    } catch (error) {
+        console.error('Error loading cities:', error);
+        // Fallback: keep empty dropdowns, user will need to type or select from empty list
+    }
+}
 
 // ==================== FORM VALIDATION & SUBMISSION ====================
 function searchTickets(event) {
@@ -142,32 +225,25 @@ function searchTickets(event) {
     
     // Display errors or submit
     if (errors.length > 0) {
-        Toast.error(errors.join('\n'), 'Lỗi tìm kiếm');
+        alert(errors.join('\n'));
     } else {
-        // Success - would normally submit to backend
-        const fromText = document.querySelector(`#from option[value="${from}"]`).text;
-        const toText = document.querySelector(`#to option[value="${to}"]`).text;
+        // Get city names
+        const fromText = document.querySelector(`#from option[value="${from}"]`).textContent;
+        const toText = document.querySelector(`#to option[value="${to}"]`).textContent;
         
-        console.log('🎫 Tìm kiếm vé xe:', {
+        // Redirect to search results page with query params
+        const params = new URLSearchParams({
             from: fromText,
             to: toText,
-            departDate,
-            returnDate: tripType === 'round-trip' ? returnDate : null,
-            tickets,
-            tripType
+            date: departDate,
+            tripType: tripType
         });
-        
-        let message = `🚌 Từ: ${fromText}\n` +
-                     `📍 Đến: ${toText}\n` +
-                     `📅 Ngày đi: ${formatDate(departDate)}\n`;
-        
-        if (tripType === 'round-trip' && returnDate) {
-            message += `🔄 Ngày về: ${formatDate(returnDate)}\n`;
+
+        if (tripType === 'round-trip') {
+            params.append('returnDate', returnDate);
         }
-        
-        message += `🎫 Số vé: ${tickets} vé`;
-        
-        Toast.success(message, 'Tìm chuyến xe thành công!');
+
+        window.location.href = `search-results.html?${params.toString()}`;
     }
 }
 

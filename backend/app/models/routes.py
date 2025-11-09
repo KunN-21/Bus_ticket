@@ -83,7 +83,7 @@ class HoaDonResponse(BaseModel):
     khachhang: dict  # {"hoTen": str, "maKH": str}
     phuongThucThanhToan: str
     tongTien: float
-    tuyenXe: dict  # {"maTuyenXe": str, "diemDi": str, "diemDen": str}
+    tuyenXe: dict  # {"maTuyenXe": str, "diemDi": str, "diemDen": str} (collection name in DB is now 'chuyenXe')
     donGia: float
     soVeMua: int
     gheNgoi: List[str]

@@ -39,33 +39,24 @@ def generate_booking_id() -> str:
 async def check_available_seats(request: AvailableSeatsRequest):
     """
     Kiểm tra ghế khả dụng cho một chuyến xe
-    Kết hợp cả MongoDB (ghế đã thanh toán) và Redis (ghế đang pending)
+    - Ghế đã đặt: đọc từ chuyenXe.gheNgoi[].trangThai (false = đã đặt)
+    - Ghế đang giữ chờ thanh toán: đọc từ Redis (pending seats)
     """
     db = mongodb_client.get_db()
     
-    # Lấy thông tin tuyến xe để biết tổng số ghế
-    tuyen = await db.tuyenXe.find_one({"maTuyenXe": request.maTuyen})
+    # Lấy thông tin tuyến xe
+    tuyen = await db.chuyenXe.find_one({"maTuyenXe": request.maTuyen})
     if not tuyen:
         raise HTTPException(status_code=404, detail="Không tìm thấy tuyến xe")
     
-    # Tính tổng số ghế từ array gheNgoi
-    total_seats = len(tuyen.get("gheNgoi", []))
-    if total_seats == 0:
-        total_seats = 40  # Fallback nếu không có dữ liệu
+    ghe_ngoi = tuyen.get("gheNgoi", [])
+    total_seats = len(ghe_ngoi)
     
-    # 1. Lấy ghế đã thanh toán từ MongoDB (chỉ có status "paid")
-    bookings = await db.datVe.find({
-        "maTuyenXe": request.maTuyen,
-        "ngayDi": request.ngayDi,
-        "gioDi": request.gioDi,
-        "trangThai": "paid"
-    }).to_list(1000)
+    # 1. Ghế đã đặt (đã thanh toán) - Lấy từ chuyenXe.gheNgoi[].trangThai
+    # trangThai: True = còn trống, False = đã đặt
+    booked_seats = [seat["maGhe"] for seat in ghe_ngoi if not seat.get("trangThai", True)]
     
-    booked_seats = []
-    for booking in bookings:
-        booked_seats.extend(booking.get("soGheNgoi", []))
-    
-    # 2. Lấy ghế đang pending từ Redis
+    # 2. Lấy ghế đang pending từ Redis (chờ thanh toán)
     pending_seats = await seat_holding_service.get_pending_seats(
         request.maTuyen,
         request.ngayDi,
@@ -87,10 +78,10 @@ async def check_available_seats(request: AvailableSeatsRequest):
     # 4. Ghế đang được người khác giữ = pending_seats - my_pending
     held_by_others = [s for s in pending_seats if s not in my_pending]
     
-    # 5. Lấy danh sách tất cả ghế từ database
-    all_seats = [seat["maGhe"] for seat in tuyen.get("gheNgoi", [])]
+    # 5. Tất cả ghế
+    all_seats = [seat["maGhe"] for seat in ghe_ngoi]
     
-    # 6. Ghế còn trống = tất cả - đã thanh toán - đang giữ bởi người khác
+    # 6. Ghế còn trống = tất cả - đã đặt - đang giữ bởi người khác
     occupied = set(booked_seats + held_by_others)
     available = [s for s in all_seats if s not in occupied]
     
@@ -118,10 +109,39 @@ async def create_booking(request: BookingCreateRequest, current_user: dict = Dep
     db = mongodb_client.get_db()
     customer_id = current_user.get("maKH")
     
-    # Lấy thông tin tuyến xe để tính tiền
-    tuyen = await db.tuyenXe.find_one({"maTuyenXe": request.maTuyen})
+    # Lấy thông tin tuyến xe
+    tuyen = await db.chuyenXe.find_one({"maTuyenXe": request.maTuyen})
     if not tuyen:
         raise HTTPException(status_code=404, detail="Không tìm thấy tuyến xe")
+    
+    # KIỂM TRA ghế có còn trống không (từ chuyenXe.gheNgoi[].trangThai)
+    ghe_ngoi = tuyen.get("gheNgoi", [])
+    ghe_map = {seat["maGhe"]: seat.get("trangThai", True) for seat in ghe_ngoi}
+    
+    # Kiểm tra từng ghế user chọn
+    unavailable_seats = []
+    for seat_code in request.soGheNgoi:
+        if seat_code not in ghe_map:
+            unavailable_seats.append(f"{seat_code} (không tồn tại)")
+        elif not ghe_map[seat_code]:  # trangThai = False = đã đặt
+            unavailable_seats.append(f"{seat_code} (đã có người đặt)")
+    
+    if unavailable_seats:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Ghế không khả dụng: {', '.join(unavailable_seats)}"
+        )
+    
+    # Kiểm tra ghế có đang được giữ bởi người khác không (Redis)
+    pending_seats = await seat_holding_service.get_pending_seats(
+        request.maTuyen, request.ngayDi, request.gioDi
+    )
+    held_seats = [s for s in request.soGheNgoi if s in pending_seats]
+    if held_seats:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ghế đang được người khác giữ: {', '.join(held_seats)}"
+        )
     
     gia_ve = tuyen.get("giaVe", 0)
     tong_tien = gia_ve * len(request.soGheNgoi)
@@ -186,7 +206,7 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
     customer_id = current_user.get("maKH")
     
     # Kiểm tra đã thanh toán chưa (trong MongoDB)
-    existing = await db.datVe.find_one({"maDatVe": request.maDatVe})
+    existing = await db.veXe.find_one({"maDatVe": request.maDatVe})
     if existing:
         if existing.get("maKH") != customer_id:
             raise HTTPException(status_code=403, detail="Bạn không có quyền với booking này")
@@ -210,7 +230,7 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
     # Lưu vào MongoDB
     booking_doc = {
         "maDatVe": booking_info["maDatVe"],
-        "maTuyenXe": booking_info["maTuyen"],  # Lưu maTuyenXe để khớp với collection tuyenXe
+    "maTuyenXe": booking_info["maTuyen"],  # Lưu maTuyenXe để khớp với collection chuyenXe
         "maKH": booking_info["customer_id"],
         "ngayDi": booking_info["ngayDi"],
         "gioDi": booking_info["gioDi"],
@@ -222,13 +242,24 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
         "transactionId": request.transactionId
     }
     
-    result = await db.datVe.insert_one(booking_doc)
+    result = await db.veXe.insert_one(booking_doc)
     if not result.inserted_id:
         raise HTTPException(status_code=500, detail="Không thể lưu booking")
     
-    # NOTE: Không cập nhật tuyenXe.gheNgoi vì nó là template chung cho tất cả các ngày
-    # Trạng thái ghế theo ngày được xác định bởi collection datVe
-    # Khi client query ghế, sẽ kiểm tra datVe để biết ghế nào đã đặt
+    # CẬP NHẬT trạng thái ghế trong chuyenXe.gheNgoi[]
+    # Đặt trangThai = False cho các ghế đã đặt
+    for seat_code in booking_info["seats"]:
+        await db.chuyenXe.update_one(
+            {
+                "maTuyenXe": booking_info["maTuyen"],
+                "gheNgoi.maGhe": seat_code
+            },
+            {
+                "$set": {
+                    "gheNgoi.$.trangThai": False  # False = đã có người đặt
+                }
+            }
+        )
     
     # Xóa khỏi Redis
     await seat_holding_service.confirm_booking(
@@ -251,7 +282,7 @@ async def cancel_payment(request: PaymentCancelRequest, current_user: dict = Dep
     customer_id = current_user.get("maKH")
     
     # Kiểm tra đã thanh toán chưa
-    existing = await db.datVe.find_one({"maDatVe": request.maDatVe})
+    existing = await db.veXe.find_one({"maDatVe": request.maDatVe})
     if existing:
         raise HTTPException(status_code=400, detail="Không thể hủy booking đã thanh toán")
     
@@ -292,7 +323,7 @@ async def get_my_bookings(current_user: dict = Depends(get_current_customer)):
     db = mongodb_client.get_db()
     customer_id = current_user.get("maKH")
     
-    bookings = await db.datVe.find({"maKH": customer_id}).sort("ngayDat", -1).to_list(100)
+    bookings = await db.veXe.find({"maKH": customer_id}).sort("ngayDat", -1).to_list(100)
     
     result = []
     for b in bookings:

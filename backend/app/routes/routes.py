@@ -18,8 +18,8 @@ async def get_cities():
     try:
         db = await get_database()
         
-        # Lấy tất cả tuyến xe
-        routes = await db.tuyenXe.find({}).to_list(length=None)
+        # Lấy tất cả chuyến xe
+        routes = await db.chuyenXe.find({}).to_list(length=None)
         
         # Lấy tất cả điểm đi và điểm đến unique
         cities = set()
@@ -42,8 +42,8 @@ async def get_all_routes():
     try:
         db = await get_database()
         
-        # Lấy tất cả tuyến xe (chú ý: tên collection là 'tuyenXe' với chữ t thường)
-        routes = await db.tuyenXe.find({}).to_list(length=None)
+        # Lấy tất cả chuyến xe (chú ý: tên collection là 'chuyenXe')
+        routes = await db.chuyenXe.find({}).to_list(length=None)
         
         result = []
         for route in routes:
@@ -59,9 +59,9 @@ async def search_routes(search: RouteSearchRequest):
     """
     Tìm kiếm tuyến xe theo điểm đi, điểm đến và ngày đi.
 
-    Lưu ý: `TuyenXe` là template (lichChay='daily'). Khi người dùng tìm theo ngày,
+    Lưu ý: `ChuyenXe` (trước là TuyenXe) là template (lichChay='daily'). Khi người dùng tìm theo ngày,
     backend sẽ sinh datetime khởi hành kết hợp giữa `ngayDi` và `thoiGianXuatBen` (chuỗi 'HH:MM').
-    Đồng thời kiểm tra các booking đã có trong `DatVe` cho ngày đó để tính ghế còn trống.
+    Đồng thời kiểm tra các booking đã có trong `veXe` cho ngày đó để tính ghế còn trống.
     """
     try:
         db = await get_database()
@@ -76,25 +76,15 @@ async def search_routes(search: RouteSearchRequest):
             "lichChay": {"$in": ["daily", None, ""]}
         }
 
-        routes = await db.tuyenXe.find(query).to_list(length=None)
+        routes = await db.chuyenXe.find(query).to_list(length=None)
 
         result = []
         for route in routes:
-            # Build set of already booked seats for this route + date
-            # Chỉ lấy các booking đã thanh toán (trangThai = "paid")
-            booked_docs = await db.datVe.find({
-                "maTuyenXe": route["maTuyenXe"], 
-                "ngayDi": search.ngayDi,
-                "trangThai": "paid"
-            }).to_list(length=None)
-            
-            booked_set = set()
-            for b in booked_docs:
-                for s in b.get("soGheNgoi", []):
-                    booked_set.add(s)
-
-            total_seats = len(route.get("gheNgoi", []))
-            so_ghe_trong = total_seats - len(booked_set)
+            # Đếm số ghế trống từ chuyenXe.gheNgoi[].trangThai
+            # trangThai: True = còn trống, False = đã đặt
+            ghe_ngoi = route.get("gheNgoi", [])
+            total_seats = len(ghe_ngoi)
+            so_ghe_trong = sum(1 for seat in ghe_ngoi if seat.get("trangThai", True))
 
             gia_ve = route.get("giaVe", route.get("quangDuong", 0) * 1000)
 
@@ -121,17 +111,18 @@ async def search_routes(search: RouteSearchRequest):
 async def get_route_detail(ma_tuyen_xe: str, date: Optional[str] = None):
     """
     Lấy chi tiết tuyến xe (template). Nếu truyền `date=YYYY-MM-DD` sẽ trả thông tin
-    ghế với trạng thái tính theo các booking đã có cho ngày đó.
+    ghế với trạng thái lưu trực tiếp trong chuyenXe.gheNgoi[].trangThai
     """
     try:
         db = await get_database()
 
-        route = await db.tuyenXe.find_one({"maTuyenXe": ma_tuyen_xe})
+        route = await db.chuyenXe.find_one({"maTuyenXe": ma_tuyen_xe})
 
         if not route:
             raise HTTPException(status_code=404, detail="Không tìm thấy tuyến xe")
 
-        # If date provided, combine to produce thoiGianKhoiHanh datetime and compute booked seats
+        # If date provided, return seat status directly from chuyenXe.gheNgoi
+        # (trangThai is already stored in the collection)
         if date:
             try:
                 # Validate date format
@@ -139,32 +130,11 @@ async def get_route_detail(ma_tuyen_xe: str, date: Optional[str] = None):
             except Exception:
                 raise HTTPException(status_code=400, detail="Date invalid, use YYYY-MM-DD")
 
-            # Compute booked seats for this maTuyenXe + date
-            # Chỉ lấy các booking đã thanh toán (trangThai = "paid")
-            booked_docs = await db.datVe.find({
-                "maTuyenXe": ma_tuyen_xe, 
-                "ngayDi": date,
-                "trangThai": "paid"
-            }).to_list(length=None)
-            
-            booked_set = set()
-            for b in booked_docs:
-                for s in b.get("soGheNgoi", []):
-                    booked_set.add(s)
-
-            # Mark seats accordingly
+            # Trạng thái ghế được lưu trực tiếp trong chuyenXe.gheNgoi[]
             # trangThai: True = còn trống, False = đã có người đặt
-            seats = []
-            for s in route.get("gheNgoi", []):
-                seat_code = s.get("maGhe")
-                seats.append({
-                    "maGhe": seat_code,
-                    "trangThai": False if seat_code in booked_set else True
-                })
-
+            # Chỉ cần trả về gheNgoi từ collection
             out = route.copy()
             out.pop("_id", None)
-            out["gheNgoi"] = seats
             return out
 
         # No date: return template as-is (don't mutate DB)
@@ -179,7 +149,7 @@ async def get_route_detail(ma_tuyen_xe: str, date: Optional[str] = None):
 # ========================================
 # OLD BOOKING ENDPOINTS REMOVED
 # ========================================
-# Logic cũ (SAI): Tạo pending bookings trực tiếp trong MongoDB collection DatVe
+# Logic cũ (SAI): Tạo pending bookings trực tiếp trong MongoDB collection veXe
 # Logic mới (ĐÚNG): 
 #   1. Pending bookings → Lưu Redis (TTL 3 phút) - Xem /api/v1/bookings
 #   2. Confirmed bookings → Lưu MongoDB sau khi thanh toán

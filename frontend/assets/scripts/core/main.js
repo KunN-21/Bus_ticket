@@ -478,24 +478,27 @@ document.addEventListener('click', (e) => {
 // View user profile
 function viewProfile() {
     console.log('📄 View Profile');
-    Toast.info('Chức năng xem thông tin cá nhân sẽ sớm được ra mắt!', 'Tính năng đang phát triển');
     toggleAccountMenu();
+    // Navigate to profile page
+    window.location.href = 'profile.html';
     return false;
 }
 
 // View user bookings
 function viewBookings() {
     console.log('🎫 View Bookings');
-    Toast.info('Chức năng xem vé của tôi sẽ sớm được ra mắt!', 'Tính năng đang phát triển');
     toggleAccountMenu();
+    // Navigate to user's tickets page
+    window.location.href = 'my-tickets.html';
     return false;
 }
 
 // View booking history
 function viewHistory() {
     console.log('📜 View History');
-    Toast.info('Chức năng xem lịch sử đặt vé sẽ sớm được ra mắt!', 'Tính năng đang phát triển');
     toggleAccountMenu();
+    // Navigate to booking history page
+    window.location.href = 'booking-history.html';
     return false;
 }
 

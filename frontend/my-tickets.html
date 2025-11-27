@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vé của tôi - VOOBUS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles/core/main.css">
+  <link rel="stylesheet" href="assets/styles/components/header.css">
+  <link rel="stylesheet" href="assets/styles/components/footer.css">
+  <link rel="stylesheet" href="assets/styles/components/toast.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background: #f5f5f5; }
+    .tickets-section {
+      min-height: 100vh;
+      padding: 80px 20px 40px;
+      background: linear-gradient(135deg, #FF6600 0%, #FF8C42 100%);
+    }
+    .tickets-container { max-width: 1200px; margin: 0 auto; }
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.3); transform: translateX(-4px); }
+    .page-title {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .page-title h2 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .page-title p {
+      font-size: 16px;
+      opacity: 0.95;
+    }
+    .tickets-grid {
+      display: grid;
+      gap: 20px;
+    }
+    .ticket-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .ticket-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+    }
+    .ticket-status-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-paid { background: #4caf50; color: white; }
+    .status-pending { background: #ff9800; color: white; }
+    .status-cancelled { background: #f44336; color: white; }
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-right: 80px;
+    }
+    .ticket-route {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .ticket-meta {
+      font-size: 13px;
+      color: #666;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .ticket-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .ticket-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      padding: 16px;
+      background: #f9f9f9;
+      border-radius: 12px;
+    }
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .detail-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #FF6600 0%, #FF8C42 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+    }
+    .detail-content {
+      flex: 1;
+    }
+    .detail-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 2px;
+    }
+    .detail-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+    }
+    .ticket-price {
+      font-size: 24px;
+      font-weight: 700;
+      color: #FF6600;
+    }
+    .ticket-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Poppins', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-details {
+      background: #1976d2;
+      color: white;
+    }
+    .btn-details:hover {
+      background: #1565c0;
+      transform: translateY(-2px);
+    }
+    .btn-cancel {
+      background: #f44336;
+      color: white;
+    }
+    .btn-cancel:hover {
+      background: #d32f2f;
+      transform: translateY(-2px);
+    }
+    .btn-cancel:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .empty-state {
+      background: white;
+      border-radius: 16px;
+      padding: 80px 20px;
+      text-align: center;
+    }
+    .empty-icon {
+      font-size: 100px;
+      margin-bottom: 20px;
+    }
+    .empty-state h3 {
+      color: #333;
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    .empty-state p {
+      color: #666;
+      font-size: 16px;
+    }
+    @media (max-width: 768px) {
+      .tickets-section { padding: 60px 15px 30px; }
+      .page-title h2 { font-size: 28px; }
+      .ticket-header { padding-right: 0; flex-direction: column; gap: 12px; }
+      .ticket-status-badge { position: static; align-self: flex-start; }
+      .ticket-actions { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="index.html" class="logo">
+          <div class="logo-text">
+            <span class="logo-brand">VOOBUS</span>
+          </div>
+        </a>
+        <nav class="nav-menu">
+          <a href="index.html" class="nav-link">Trang chủ</a>
+          <a href="index.html#schedule" class="nav-link">Lịch trình</a>
+          <a href="index.html#lookup" class="nav-link">Tra cứu vé</a>
+          <a href="index.html#invoice" class="nav-link">Hóa đơn</a>
+          <a href="index.html#about" class="nav-link">Về chúng tôi</a>
+        </nav>
+
+        <!-- Right Actions -->
+        <div class="header-actions">
+          <button class="btn-language">
+            <img src="https://futabus.vn/images/icons/vietnam.svg" alt="VI" width="20">
+            VI
+          </button>
+          
+          <!-- Login Button (shown when not logged in) -->
+          <a href="login_register.html" class="btn-login" id="btnLogin">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Đăng nhập/Đăng ký
+          </a>
+
+          <!-- User Account Dropdown (shown when logged in) -->
+          <div class="user-account" id="userAccount" style="display: none;">
+            <button class="btn-account" onclick="toggleAccountMenu()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span id="userName">Tài khoản</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-icon">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="account-dropdown" id="accountDropdown">
+              <div class="account-info">
+                <div class="account-avatar">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div class="account-details">
+                  <div class="account-name" id="dropdownUserName">User</div>
+                  <div class="account-email" id="dropdownUserEmail">email@example.com</div>
+                </div>
+              </div>
+              <div class="account-divider"></div>
+              <a href="profile.html" class="account-menu-item">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Thông tin cá nhân
+              </a>
+              <a href="my-tickets.html" class="account-menu-item">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Vé của tôi
+              </a>
+              <a href="booking-history.html" class="account-menu-item">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Lịch sử đặt vé
+              </a>
+              <div class="account-divider"></div>
+              <a href="#" class="account-menu-item logout" onclick="logout()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Đăng xuất
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Mở menu điều hướng" title="Mở menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="tickets-section">
+      <div class="tickets-container">
+        <a href="index.html" class="btn-back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Quay lại trang chủ
+        </a>
+        <div class="page-title">
+          <h2>Vé của tôi</h2>
+          <p>Quản lý và theo dõi các vé xe của bạn</p>
+        </div>
+        <div class="tickets-grid" id="ticketsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p>© 2025 VOOBUS - Hệ Thống Đặt Vé Xe Khách. Bảo lưu mọi quyền.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/scripts/core/toast.js?v=2"></script>
+  <script src="assets/scripts/core/main.js?v=2"></script>
+  <script>
+    const API_BASE_URL = 'http://localhost:8000';
+
+    const mockTickets = [
+      { maVe: 'VE001', route: 'TP.HCM - Hà Nội', seat: 'A12', departure: '2025-11-20T08:30:00', price: 850000, status: 'paid' },
+      { maVe: 'VE002', route: 'TP.HCM - Đà Nẵng', seat: 'B05', departure: '2025-11-22T14:00:00', price: 450000, status: 'pending' },
+      { maVe: 'VE003', route: 'Hà Nội - Hải Phòng', seat: 'C10', departure: '2025-11-15T10:00:00', price: 250000, status: 'cancelled' }
+    ];
+
+    function formatDateTime(dt) { 
+      const d = new Date(dt); 
+      return d.toLocaleString('vi-VN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }); 
+    }
+
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+      }).format(amount);
+    }
+
+    function getStatusInfo(status) {
+      const map = {
+        'paid': { text: 'Đã thanh toán', class: 'status-paid' },
+        'pending': { text: 'Chờ xử lý', class: 'status-pending' },
+        'cancelled': { text: 'Đã hủy', class: 'status-cancelled' }
+      };
+      return map[status] || { text: status, class: 'status-pending' };
+    }
+
+    function renderTickets(tickets) {
+      const el = document.getElementById('ticketsList');
+      if (!tickets || tickets.length === 0) { 
+        el.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🎫</div>
+            <h3>Chưa có vé</h3>
+            <p>Bạn chưa mua vé nào. Hãy đặt vé ngay để trải nghiệm dịch vụ của chúng tôi!</p>
+          </div>
+        `;
+        return; 
+      }
+      
+      el.innerHTML = tickets.map(t => {
+        const statusInfo = getStatusInfo(t.status);
+        return `
+          <div class="ticket-card">
+            <div class="ticket-status-badge ${statusInfo.class}">${statusInfo.text}</div>
+            <div class="ticket-header">
+              <div>
+                <div class="ticket-route">${t.route}</div>
+                <div class="ticket-meta">
+                  <span>🎫 Mã vé: <strong>${t.maVe}</strong></span>
+                  <span>💺 Ghế: <strong>${t.seat}</strong></span>
+                </div>
+              </div>
+            </div>
+            <div class="ticket-details">
+              <div class="detail-item">
+                <div class="detail-icon">📅</div>
+                <div class="detail-content">
+                  <div class="detail-label">Ngày giờ khởi hành</div>
+                  <div class="detail-value">${formatDateTime(t.departure)}</div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-icon">💰</div>
+                <div class="detail-content">
+                  <div class="detail-label">Giá vé</div>
+                  <div class="detail-value ticket-price">${formatCurrency(t.price)}</div>
+                </div>
+              </div>
+            </div>
+            <div class="ticket-actions">
+              <button class="btn btn-details" onclick="viewTicketDetails('${t.maVe}')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Chi tiết
+              </button>
+              ${t.status === 'cancelled' ? 
+                '<button disabled class="btn btn-cancel">Đã hủy</button>' : 
+                `<button class="btn btn-cancel" onclick="cancelTicket('${t.maVe}')">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                  </svg>
+                  Hủy vé
+                </button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadTickets() {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      if (!token) { 
+        Toast.warning('Vui lòng đăng nhập để xem vé'); 
+        setTimeout(() => window.location.href = 'login_register.html', 1500);
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/tickets/me`, { 
+          headers: { 'Authorization': `Bearer ${token}` } 
+        });
+        
+        if (!res.ok) { 
+          console.warn('Tickets endpoint not available, using mock data'); 
+          renderTickets(mockTickets); 
+          Toast.info('Hiển thị dữ liệu mẫu. Backend chưa sẵn sàng.');
+          return; 
+        }
+        
+        const data = await res.json();
+        renderTickets(data.tickets || data || []);
+      } catch (err) { 
+        console.error(err); 
+        Toast.error('Không thể tải vé. Hiển thị dữ liệu mẫu.'); 
+        renderTickets(mockTickets); 
+      }
+    }
+
+    function viewTicketDetails(maVe) { 
+      Toast.info(`Xem chi tiết vé: ${maVe}`, 'Thông tin vé'); 
+    }
+
+    async function cancelTicket(maVe) {
+      const confirmed = await Modal.confirm(
+        `Bạn có chắc muốn hủy vé ${maVe}? Hành động này không thể hoàn tác.`, 
+        'Xác nhận hủy vé', 
+        'warning'
+      );
+      
+      if (!confirmed) return;
+      
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/tickets/${maVe}/cancel`, { 
+          method: 'POST', 
+          headers: { 'Authorization': `Bearer ${token}` } 
+        });
+        
+        if (!res.ok) { 
+          const body = await res.json().catch(() => ({})); 
+          throw new Error(body.detail || 'Không thể hủy vé'); 
+        }
+        
+        Toast.success('Hủy vé thành công!');
+        setTimeout(loadTickets, 800);
+      } catch (err) { 
+        console.error(err); 
+        Toast.error(err.message || 'Hủy vé thất bại. Vui lòng thử lại sau.'); 
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadTickets);
+  </script>
+</body>
+</html>

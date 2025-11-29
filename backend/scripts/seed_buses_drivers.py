@@ -1,3 +1,4 @@
+
 """
 Script để tạo dữ liệu mẫu: 3 xe + 5 tài xế
 Sử dụng entities.py từ ducy làm chuẩn

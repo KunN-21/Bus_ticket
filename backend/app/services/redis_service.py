@@ -529,6 +529,37 @@ class RedisService:
         
         return booked_seats
 
+    @staticmethod
+    async def get_pending_seats_by_lich_chay(maLC: str, ngayDi: str) -> Dict[str, List[str]]:
+        """
+        Lấy danh sách ghế đang được giữ (pending) cho một lịch chạy + ngày
+        
+        Args:
+            maLC: Mã lịch chạy
+            ngayDi: Ngày đi (YYYY-MM-DD)
+        
+        Returns:
+            Dict mapping sessionId -> list of seat codes
+        """
+        redis = await RedisService._get_client()
+        
+        pending_key = f"pending_booking:{maLC}:{ngayDi}"
+        data = await redis.get(pending_key)
+        
+        if not data:
+            return {}
+        
+        try:
+            pending_bookings = json.loads(data)
+            result = {}
+            for session_id, booking_info in pending_bookings.items():
+                seats = booking_info.get("danhSachGhe", [])
+                if seats:
+                    result[session_id] = seats
+            return result
+        except (json.JSONDecodeError, AttributeError):
+            return {}
+
 
 # Singleton instance
 redis_service = RedisService()

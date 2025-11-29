@@ -331,13 +331,14 @@ async def get_schedule_detail(maLC: str, date: Optional[str] = None):
 
 
 @router.get("/{maCX}")
-async def get_route_detail(maCX: str, date: Optional[str] = None):
+async def get_route_detail(maCX: str, date: Optional[str] = None, sessionId: Optional[str] = None):
     """
     Lấy chi tiết chuyến xe và danh sách ghế
     
     Args:
         maCX: Mã chuyến xe
         date: Ngày đi (YYYY-MM-DD) để kiểm tra ghế đã đặt
+        sessionId: Session ID của user để xác định ghế user đang giữ
     """
     try:
         chuyen_xe = await redis_service.get_chuyen_xe(maCX)
@@ -360,23 +361,47 @@ async def get_route_detail(maCX: str, date: Optional[str] = None):
         # Lấy danh sách ghế của xe
         ghe_list = await redis_service.get_ghe_by_xe(maXe)
         
-        # Lấy ghế đã đặt nếu có date và lịch chạy
+        # Lấy ghế đã đặt và ghế đang pending nếu có date và lịch chạy
         booked_seats = []
+        held_seats = []  # Ghế đang được người khác giữ
+        my_held_seats = []  # Ghế tôi đang giữ
+        
         if date and lich_chay_list:
             for lc in lich_chay_list:
                 maLC = lc.get("maLC") or lc.get("maLich", "")
                 if maLC:
+                    # Lấy ghế đã thanh toán
                     seats = await redis_service.get_booked_seats_by_lich_chay(maLC)
                     booked_seats.extend(seats)
+                    
+                    # Lấy ghế đang pending (giữ chỗ)
+                    pending_info = await redis_service.get_pending_seats_by_lich_chay(maLC, date)
+                    if pending_info:
+                        for session, seats_list in pending_info.items():
+                            if sessionId and session == sessionId:
+                                my_held_seats.extend(seats_list)
+                            else:
+                                held_seats.extend(seats_list)
         
         # Thêm trạng thái cho từng ghế
         ghe_with_status = []
         for ghe in ghe_list:
             maGhe = ghe.get("maGhe", "")
+            
+            # Xác định trạng thái ghế
+            if maGhe in booked_seats:
+                trang_thai = False  # Đã đặt
+            elif maGhe in held_seats:
+                trang_thai = False  # Đang được người khác giữ (không khả dụng)
+            elif maGhe in my_held_seats:
+                trang_thai = True  # Tôi đang giữ (vẫn có thể chọn)
+            else:
+                trang_thai = True  # Còn trống
+            
             ghe_with_status.append({
                 **ghe,
                 "dadat": maGhe in booked_seats,
-                "trangThai": "booked" if maGhe in booked_seats else "available"
+                "trangThai": trang_thai
             })
         
         # Tính giá vé
@@ -391,9 +416,13 @@ async def get_route_detail(maCX: str, date: Optional[str] = None):
                 mins = int(thoi_gian_chay) % 60
                 thoi_gian_chay = f"{hours} giờ" if mins == 0 else f"{hours} giờ {mins} phút"
         
+        # Lấy maLC để trả về cho frontend
+        maLC = lich_chay_list[0].get("maLC") or lich_chay_list[0].get("maLich", "") if lich_chay_list else ""
+        
         return {
             **chuyen_xe,
             "maTuyenXe": maCX,  # Alias
+            "maLC": maLC,  # Mã lịch chạy cho booking
             "giaVe": gia_ve,    # Alias
             "thoiGianQuangDuong": str(thoi_gian_chay),  # Alias
             "thoiGianXuatBen": lich_chay_list[0].get("gioKhoiHanh", "") if lich_chay_list else "",
@@ -401,7 +430,9 @@ async def get_route_detail(maCX: str, date: Optional[str] = None):
             "xe": xe,
             "lichChay": lich_chay_list,
             "gheNgoi": ghe_with_status,
-            "soGheTrong": len([g for g in ghe_with_status if g["trangThai"] == "available"]),
+            "heldSeats": held_seats,  # Ghế đang được người khác giữ
+            "myHeldSeats": my_held_seats,  # Ghế tôi đang giữ
+            "soGheTrong": len([g for g in ghe_with_status if g["trangThai"]]),
             "soGheDaDat": len(booked_seats)
         }
     except HTTPException:

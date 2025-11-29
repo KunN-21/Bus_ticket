@@ -245,12 +245,25 @@ async function selectRoute(route) {
         return;
     }
 
+    // Get or create session ID
+    let sessionId = sessionStorage.getItem('booking_session_id');
+    if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('booking_session_id', sessionId);
+    }
+
     // Fetch full route details with seats for the selected date
     try {
-        const response = await fetch(`${API_URL}/routes/${route.maTuyenXe}?date=${searchDate}`);
+        const response = await fetch(`${API_URL}/routes/${route.maTuyenXe}?date=${searchDate}&sessionId=${sessionId}`);
         if (!response.ok) throw new Error('Failed to fetch route details');
 
         const routeDetails = await response.json();
+        
+        // Store maLC from response for booking
+        if (routeDetails.maLC) {
+            currentRoute.maLC = routeDetails.maLC;
+        }
+        
         openSeatModal(routeDetails);
 
     } catch (error) {
@@ -546,7 +559,7 @@ async function showPaymentModal(booking) {
             <p class="ticket-code">Mã đặt vé: <strong>${maHD}</strong></p>
             <div class="countdown-timer" id="countdownTimer">
                 <span>⏱️ Thời gian còn lại: </span>
-                <strong id="timerDisplay">03:00</strong>
+                <strong id="timerDisplay">10:00</strong>
             </div>
         </div>
 
@@ -612,8 +625,8 @@ async function showPaymentModal(booking) {
 
     modal.classList.add('active');
     
-    // Start countdown timer (3 minutes = 180 seconds)
-    startCountdown(180, maHD);
+    // Start countdown timer (10 minutes = 600 seconds)
+    startCountdown(600, maHD);
 }
 
 // Countdown timer

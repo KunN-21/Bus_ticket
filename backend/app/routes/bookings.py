@@ -503,13 +503,19 @@ async def get_my_bookings(current_user: dict = Depends(get_current_customer)):
         # Lấy thông tin lịch chạy
         lich_chay = await redis_service.get_lich_chay(ve.get("maLC", ""))
         chuyen_xe = None
+        xe = None
         if lich_chay:
             chuyen_xe = await redis_service.get_chuyen_xe(lich_chay.get("maCX", ""))
+            # Lấy thông tin xe để có biển số
+            if chuyen_xe and chuyen_xe.get("maXe"):
+                xe = await redis_service.get_xe(chuyen_xe.get("maXe"))
         
         result.append({
             **ve,
             "lichChay": lich_chay,
-            "chuyenXe": chuyen_xe
+            "chuyenXe": chuyen_xe,
+            "tenKH": current_user.get("hoTen", "N/A"),
+            "bienSoXe": xe.get("bienSoXe", "N/A") if xe else "N/A"
         })
     
     return result
@@ -641,14 +647,10 @@ async def lookup_ticket(request: TicketLookupRequest):
         ngay_di = lich_chay.get("ngayKhoiHanh")
         gio_di = lich_chay.get("gioKhoiHanh") or lich_chay.get("thoiGianXuatBen")
         gio_ket_thuc = lich_chay.get("thoiGianDenDuKien")
-        
-        print(f"DEBUG: lich_chay data: {lich_chay}")
-        print(f"DEBUG: Extracted - ngay_di: {ngay_di}, gio_di: {gio_di}, gio_ket_thuc: {gio_ket_thuc}")
     
     # Lấy thông tin ghế ngồi
     ghe_ngoi = await redis_service.get_ghe_ngoi(ve.get("maGhe", ""))
     so_ghe = ghe_ngoi.get("soGhe") if ghe_ngoi else None
-    print(f"DEBUG: maGhe: {ve.get('maGhe')}, ghe_ngoi: {ghe_ngoi}, so_ghe: {so_ghe}")
     
     # Lấy thông tin hóa đơn
     hoa_don = await redis_service.get_hoa_don(ve.get("maHD", ""))

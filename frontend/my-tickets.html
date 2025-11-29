@@ -313,7 +313,7 @@
         <nav class="nav-menu">
           <a href="index.html" class="nav-link">Trang chủ</a>
           <a href="index.html#lookup" class="nav-link">Tra cứu vé</a>
-          <a href="index.html#invoice" class="nav-link">Hóa đơn</a>
+
           <a href="index.html#about" class="nav-link">Về chúng tôi</a>
         </nav>
 
@@ -881,76 +881,6 @@
       align-items: center;
       gap: 12px;
       padding: 14px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    }
-
-    .ticket-info-icon {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #FF6600 0%, #FF8C42 100%);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-
-    .ticket-info-content {
-      flex: 1;
-    }
-
-    .ticket-info-label {
-      font-size: 12px;
-      color: #999;
-      margin-bottom: 2px;
-    }
-
-    .ticket-info-value {
-      font-size: 15px;
-      font-weight: 600;
-      color: #333;
-    }
-
-    .ticket-info-value.price {
-      color: #FF6600;
-      font-size: 20px;
-    }
-
-    .ticket-qr-section {
-      text-align: center;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      margin-top: 20px;
-    }
-
-    .ticket-qr-section h4 {
-      margin: 0 0 16px 0;
-      color: #333;
-    }
-
-    .ticket-qr-placeholder {
-      width: 150px;
-      height: 150px;
-      background: #f0f0f0;
-      border: 2px dashed #ddd;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto;
-      font-size: 60px;
-      color: #ccc;
-    }
-
-    @media (max-width: 600px) {
-      .ticket-info-grid {
-        grid-template-columns: 1fr;
-      }
 
       .ticket-route-display {
         flex-direction: column;
@@ -1148,11 +1078,14 @@
 
       const diemDi = ticket.chuyenXe?.diemDi || ticket.diemDi || 'N/A';
       const diemDen = ticket.chuyenXe?.diemDen || ticket.diemDen || 'N/A';
-      const seats = ticket.maGhe || 'N/A';
+      const soGhe = ticket.soGheNgoi || ticket.maGhe || 'N/A';
       const statusInfo = getStatusInfo(ticket.trangThai);
       const ngayKhoiHanh = ticket.lichChay?.ngayKhoiHanh || ticket.ngayDi || extractDateFromMaLC(ticket.maLC) || 'N/A';
-      const gioKhoiHanh = ticket.lichChay?.gioKhoiHanh || ticket.lichChay?.thoiGianXuatBen || extractTimeFromMaLC(ticket.maLC) || 'N/A';
+      const gioKhoiHanh = ticket.lichChay?.gioKhoiHanh || ticket.lichChay?.thoiGianXuatBen || ticket.gioDi || extractTimeFromMaLC(ticket.maLC) || 'N/A';
       const giaVe = ticket.chuyenXe?.giaChuyenXe || ticket.giaVe || 0;
+      const loaiXe = ticket.chuyenXe?.loaiXe || ticket.loaiXe || 'Limousine';
+      const bienSoXe = ticket.lichChay?.bienSoXe || ticket.bienSoXe || 'N/A';
+      const tenHanhKhach = ticket.tenKH || 'N/A';
 
       const modalBody = document.getElementById('detailModalBody');
       modalBody.innerHTML = `
@@ -1176,68 +1109,66 @@
           
           <div class="ticket-info-grid">
             <div class="ticket-info-item">
+              <div class="ticket-info-icon icon-user">👤</div>
+              <div class="ticket-info-content">
+                <div class="ticket-info-label">Hành khách</div>
+                <div class="ticket-info-value">${tenHanhKhach}</div>
+              </div>
+            </div>
+            
+            <div class="ticket-info-item">
+              <div class="ticket-info-icon icon-date">📅</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Ngày khởi hành</div>
                 <div class="ticket-info-value">${formatDateTime(ngayKhoiHanh, null)}</div>
               </div>
             </div>
+            
             <div class="ticket-info-item">
-
-              </div>
+              <div class="ticket-info-icon icon-time">🕐</div>
               <div class="ticket-info-content">
-                <div class="ticket-info-label">Giờ xuất bến</div>
+                <div class="ticket-info-label">Giờ khởi hành</div>
                 <div class="ticket-info-value">${gioKhoiHanh}</div>
               </div>
             </div>
+            
             <div class="ticket-info-item">
+              <div class="ticket-info-icon icon-seat">💺</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Số ghế</div>
-                <div class="ticket-info-value">${seats}</div>
+                <div class="ticket-info-value">${soGhe}</div>
               </div>
             </div>
+            
             <div class="ticket-info-item">
-              <div class="ticket-info-content">
-                <div class="ticket-info-label">Số lượng vé</div>
-                <div class="ticket-info-value">1 vé</div>
-              </div>
-            </div>
-            <div class="ticket-info-item">
+              <div class="ticket-info-icon icon-bus">🚌</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Loại xe</div>
-                <div class="ticket-info-value">${ticket.chuyenXe?.loaiXe || 'Limousine'}</div>
+                <div class="ticket-info-value">${loaiXe}</div>
               </div>
             </div>
+            
             <div class="ticket-info-item">
+              <div class="ticket-info-icon icon-car">🚗</div>
               <div class="ticket-info-content">
-                <div class="ticket-info-label">Giá vé</div>
-                <div class="ticket-info-value price">${formatCurrency(giaVe)}</div>
+                <div class="ticket-info-label">Biển số xe</div>
+                <div class="ticket-info-value">${bienSoXe}</div>
               </div>
             </div>
-          </div>
-          
-          ${ticket.ngayThanhToan ? `
-          <div class="ticket-info-grid" style="margin-top: 16px;">
-            <div class="ticket-info-item">
-              style="background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);">✓</div>
+            
+            <div class="ticket-info-item" style="grid-column: 1 / -1; background: #fff3e0; border: 1px solid #ffe0b2;">
+              <div class="ticket-info-icon icon-price">💰</div>
               <div class="ticket-info-content">
-                <div class="ticket-info-label">Ngày thanh toán</div>
-                <div class="ticket-info-value">${formatDateTime(ticket.ngayThanhToan, null)}</div>
+                <div class="ticket-info-label">Tổng thanh toán</div>
+                <div class="ticket-info-value price" style="font-size: 20px; color: #FF6600;">${formatCurrency(giaVe)}</div>
               </div>
             </div>
-          </div>
-          ` : ''}
-          
-          <div class="ticket-qr-section">
-            <h4>Mã QR vé điện tử</h4>
-            <div class="ticket-qr-placeholder">📱</div>
-            <p style="margin-top: 12px; color: #666; font-size: 13px;">Xuất trình mã này khi lên xe</p>
           </div>
         </div>
       `;
 
       document.getElementById('detailModal').classList.add('active');
     }
-
     function closeDetailModal() {
       document.getElementById('detailModal').classList.remove('active');
     }

@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Header, status
 from .jwt_settings import decode_access_token
-from .database import mongodb_client
+
 
 async def get_current_user(authorization: str = Header(None)):
     """
@@ -41,6 +41,9 @@ async def get_current_customer(authorization: str = Header(None)):
     """
     Get current customer from token
     """
+    # Lazy import to avoid circular import
+    from app.services.redis_service import redis_service
+    
     payload = await get_current_user(authorization)
     
     if payload.get("type") != "customer":
@@ -49,8 +52,8 @@ async def get_current_customer(authorization: str = Header(None)):
             detail="Access denied. Customer account required."
         )
     
-    db = mongodb_client.get_db()
-    customer = await db.khachhang.find_one({"email": payload.get("sub")})
+    # Lấy từ Redis
+    customer = await redis_service.get_khach_hang_by_email(payload.get("sub"))
     
     if not customer:
         raise HTTPException(
@@ -58,15 +61,18 @@ async def get_current_customer(authorization: str = Header(None)):
             detail="Customer not found"
         )
     
-    customer.pop("password")
-    customer["_id"] = str(customer["_id"])
+    # Remove password from response
+    customer_response = {k: v for k, v in customer.items() if k != "password"}
     
-    return customer
+    return customer_response
 
 async def get_current_employee(authorization: str = Header(None)):
     """
     Get current employee from token
     """
+    # Lazy import to avoid circular import
+    from app.services.redis_service import redis_service
+    
     payload = await get_current_user(authorization)
     
     if payload.get("type") != "employee":
@@ -75,8 +81,8 @@ async def get_current_employee(authorization: str = Header(None)):
             detail="Access denied. Employee account required."
         )
     
-    db = mongodb_client.get_db()
-    employee = await db.nhanvien.find_one({"maNV": payload.get("maNV")})
+    # Lấy từ Redis
+    employee = await redis_service.get_nhan_vien(payload.get("maNV"))
     
     if not employee:
         raise HTTPException(
@@ -84,16 +90,19 @@ async def get_current_employee(authorization: str = Header(None)):
             detail="Employee not found"
         )
     
-    employee.pop("password")
-    employee["_id"] = str(employee["_id"])
+    # Remove password from response
+    employee_response = {k: v for k, v in employee.items() if k != "password"}
     
-    return employee
+    return employee_response
 
 async def get_current_admin(authorization: str = Header(None)):
     """
     Get current admin employee from token
     Only allows employees with role "admin"
     """
+    # Lazy import to avoid circular import
+    from app.services.redis_service import redis_service
+    
     payload = await get_current_user(authorization)
     
     if payload.get("type") != "employee":
@@ -111,8 +120,8 @@ async def get_current_admin(authorization: str = Header(None)):
             detail="Access denied. Admin privileges required."
         )
     
-    db = mongodb_client.get_db()
-    employee = await db.nhanvien.find_one({"maNV": payload.get("maNV")})
+    # Lấy từ Redis
+    employee = await redis_service.get_nhan_vien(payload.get("maNV"))
     
     if not employee:
         raise HTTPException(
@@ -120,10 +129,10 @@ async def get_current_admin(authorization: str = Header(None)):
             detail="Employee not found"
         )
     
-    employee.pop("password")
-    employee["_id"] = str(employee["_id"])
+    # Remove password from response
+    employee_response = {k: v for k, v in employee.items() if k != "password"}
     
-    return employee
+    return employee_response
 
 async def require_role(required_roles: list, authorization: str = Header(None)):
     """

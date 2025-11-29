@@ -1,10 +1,10 @@
 """
-API route handlers
+API route handlers - Redis version
 """
 
-from .auth import router as auth_router
+from .auth_redis import router as auth_router
 from .users import router as users_router
-from .routes import router as routes_router
+from .routes_redis import router as routes_router
 
 __all__ = [
     'auth_router',

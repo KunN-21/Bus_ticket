@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thông tin cá nhân - VOOBUS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles/core/main.css">
+  <link rel="stylesheet" href="assets/styles/components/header.css">
+  <link rel="stylesheet" href="assets/styles/components/footer.css">
+  <link rel="stylesheet" href="assets/styles/components/toast.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background: #f5f5f5; }
+    .profile-section { 
+      min-height: 100vh; 
+      padding: 80px 20px 40px;
+      background: linear-gradient(135deg, #FF6600 0%, #FF8C42 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .profile-container { max-width: 900px; width: 100%; }
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.3); transform: translateX(-4px); }
+    .profile-card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .profile-header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .profile-header h2 {
+      color: #333;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .profile-header p {
+      color: #666;
+      font-size: 15px;
+      font-weight: 400;
+    }
+    .form-group {
+      margin-bottom: 24px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .form-group label span {
+      color: #e74c3c;
+    }
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: 'Poppins', sans-serif;
+      transition: all 0.3s;
+      background: #fafafa;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #FF6600;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(255, 102, 0, 0.1);
+    }
+    .form-group input:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+      color: #999;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .btn-save {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #FF6600 0%, #FF8C42 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 12px;
+      font-family: 'Poppins', sans-serif;
+    }
+    .btn-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(255, 102, 0, 0.4);
+    }
+    .btn-save:active {
+      transform: translateY(0);
+    }
+    @media (max-width: 768px) {
+      .profile-section { padding: 60px 15px 30px; }
+      .profile-card { padding: 30px 20px; }
+      .form-row { grid-template-columns: 1fr; }
+      .profile-header h2 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="index.html" class="logo">
+          <div class="logo-text">
+            <span class="logo-brand">VOOBUS</span>
+          </div>
+        </a>
+        <nav class="nav-menu">
+          <a href="index.html" class="nav-link">Trang chủ</a>
+          <a href="index.html#lookup" class="nav-link">Tra cứu vé</a>
+          <a href="index.html#invoice" class="nav-link">Hóa đơn</a>
+          <a href="index.html#about" class="nav-link">Về chúng tôi</a>
+        </nav>
+
+        <!-- Right Actions -->
+        <div class="header-actions">
+          <button class="btn-language">
+            <img src="https://futabus.vn/images/icons/vietnam.svg" alt="VI" width="20">
+            VI
+          </button>
+          
+          <!-- Login Button (shown when not logged in) -->
+          <a href="login_register.html" class="btn-login" id="btnLogin">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Đăng nhập/Đăng ký
+          </a>
+
+          <!-- User Account Dropdown (shown when logged in) -->
+          <div class="user-account" id="userAccount" style="display: none;">
+            <button class="btn-account" onclick="toggleAccountMenu()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span id="userName">Tài khoản</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-icon">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="account-dropdown" id="accountDropdown">
+              <div class="account-info">
+                <div class="account-avatar">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div class="account-details">
+                  <div class="account-name" id="dropdownUserName">User</div>
+                  <div class="account-email" id="dropdownUserEmail">email@example.com</div>
+                </div>
+              </div>
+              <div class="account-divider"></div>
+              <a href="profile.html" class="account-menu-item">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Thông tin cá nhân
+              </a>
+              <a href="my-tickets.html" class="account-menu-item">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Vé của tôi
+              </a>
+              <a href="booking-history.html" class="account-menu-item">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Lịch sử đặt vé
+              </a>
+              <div class="account-divider"></div>
+              <a href="#" class="account-menu-item logout" onclick="logout()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Đăng xuất
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Mở menu điều hướng" title="Mở menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="profile-section">
+      <div class="profile-container">
+        <a href="index.html" class="btn-back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Quay lại trang chủ
+        </a>
+        <div class="profile-card">
+          <div class="profile-header">
+            <h2>Thông tin cá nhân</h2>
+            <p>Quản lý thông tin tài khoản của bạn</p>
+          </div>
+          <form id="profileForm">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" disabled>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="hoTen">Họ và tên <span>*</span></label>
+                <input type="text" id="hoTen" placeholder="Nhập họ và tên" required>
+              </div>
+              <div class="form-group">
+                <label for="SDT">Số điện thoại <span>*</span></label>
+                <input type="tel" id="SDT" pattern="[0-9]{10}" placeholder="0123456789" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="diaChi">Địa chỉ <span>*</span></label>
+              <textarea id="diaChi" placeholder="Nhập địa chỉ đầy đủ" required></textarea>
+            </div>
+            <button type="submit" class="btn-save">Cập nhật thông tin</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p>© 2025 VOOBUS - Hệ Thống Đặt Vé Xe Khách. Bảo lưu mọi quyền.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/scripts/core/toast.js?v=2"></script>
+  <script src="assets/scripts/core/main.js?v=2"></script>
+  <script>
+    const API_BASE_URL = 'http://localhost:8000';
+
+    async function loadProfile(){
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      if(!token){ Toast.warning('Vui lòng đăng nhập'); return window.location.href='login_register.html'; }
+      try{
+        const res = await fetch(`${API_BASE_URL}/users/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if(!res.ok) throw new Error('Không thể tải thông tin');
+        const data = await res.json();
+        const user = data.user || data;
+        document.getElementById('email').value = user.email||'';
+        document.getElementById('hoTen').value = user.hoTen||'';
+        document.getElementById('SDT').value = user.SDT||'';
+        document.getElementById('diaChi').value = user.diaChi||'';
+      }catch(err){ console.error(err); Toast.error('Không thể tải thông tin người dùng'); }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      if(!token){ Toast.warning('Vui lòng đăng nhập'); return window.location.href='login_register.html'; }
+      const updateData = { hoTen: document.getElementById('hoTen').value.trim(), SDT: document.getElementById('SDT').value.trim(), diaChi: document.getElementById('diaChi').value.trim() };
+      if(!/^\d{10}$/.test(updateData.SDT)){ Toast.error('Số điện thoại phải 10 chữ số'); return; }
+      try{
+        const res = await fetch(`${API_BASE_URL}/users/me`, { method: 'PUT', headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(updateData) });
+        const result = await res.json();
+        if(!res.ok) throw new Error(result.detail||'Không thể cập nhật');
+        localStorage.setItem('user', JSON.stringify(result.user||result));
+        Toast.success('Cập nhật thông tin thành công');
+      }catch(err){ console.error(err); Toast.error(err.message||'Có lỗi xảy ra'); }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadProfile);
+  </script>
+</body>
+</html>

@@ -43,8 +43,8 @@ async def check_available_seats(request: AvailableSeatsRequest):
     """
     db = mongodb_client.get_db()
     
-    # Lấy thông tin tuyến xe để biết tổng số ghế
-    tuyen = await db.tuyenXe.find_one({"maTuyenXe": request.maTuyen})
+    # Lấy thông tin chuyến xe để biết tổng số ghế (collection: chuyenXe)
+    tuyen = await db.chuyenXe.find_one({"maTuyenXe": request.maTuyen})
     if not tuyen:
         raise HTTPException(status_code=404, detail="Không tìm thấy tuyến xe")
     
@@ -53,8 +53,8 @@ async def check_available_seats(request: AvailableSeatsRequest):
     if total_seats == 0:
         total_seats = 40  # Fallback nếu không có dữ liệu
     
-    # 1. Lấy ghế đã thanh toán từ MongoDB (chỉ có status "paid")
-    bookings = await db.datVe.find({
+    # 1. Lấy ghế đã thanh toán từ MongoDB (chỉ có status "paid") - collection: veXe
+    bookings = await db.veXe.find({
         "maTuyenXe": request.maTuyen,
         "ngayDi": request.ngayDi,
         "gioDi": request.gioDi,
@@ -118,8 +118,8 @@ async def create_booking(request: BookingCreateRequest, current_user: dict = Dep
     db = mongodb_client.get_db()
     customer_id = current_user.get("maKH")
     
-    # Lấy thông tin tuyến xe để tính tiền
-    tuyen = await db.tuyenXe.find_one({"maTuyenXe": request.maTuyen})
+    # Lấy thông tin chuyến xe để tính tiền (collection: chuyenXe)
+    tuyen = await db.chuyenXe.find_one({"maTuyenXe": request.maTuyen})
     if not tuyen:
         raise HTTPException(status_code=404, detail="Không tìm thấy tuyến xe")
     
@@ -185,8 +185,8 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
     db = mongodb_client.get_db()
     customer_id = current_user.get("maKH")
     
-    # Kiểm tra đã thanh toán chưa (trong MongoDB)
-    existing = await db.datVe.find_one({"maDatVe": request.maDatVe})
+    # Kiểm tra đã thanh toán chưa (trong MongoDB) - collection: veXe
+    existing = await db.veXe.find_one({"maDatVe": request.maDatVe})
     if existing:
         if existing.get("maKH") != customer_id:
             raise HTTPException(status_code=403, detail="Bạn không có quyền với booking này")
@@ -207,10 +207,10 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
     if booking_info.get("customer_id") != customer_id:
         raise HTTPException(status_code=403, detail="Bạn không có quyền với booking này")
     
-    # Lưu vào MongoDB
+    # Lưu vào MongoDB - collection: veXe
     booking_doc = {
         "maDatVe": booking_info["maDatVe"],
-        "maTuyenXe": booking_info["maTuyen"],  # Lưu maTuyenXe để khớp với collection tuyenXe
+        "maTuyenXe": booking_info["maTuyen"],  # Lưu maTuyenXe để khớp với collection chuyenXe
         "maKH": booking_info["customer_id"],
         "ngayDi": booking_info["ngayDi"],
         "gioDi": booking_info["gioDi"],
@@ -222,13 +222,13 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
         "transactionId": request.transactionId
     }
     
-    result = await db.datVe.insert_one(booking_doc)
+    result = await db.veXe.insert_one(booking_doc)
     if not result.inserted_id:
         raise HTTPException(status_code=500, detail="Không thể lưu booking")
     
-    # NOTE: Không cập nhật tuyenXe.gheNgoi vì nó là template chung cho tất cả các ngày
-    # Trạng thái ghế theo ngày được xác định bởi collection datVe
-    # Khi client query ghế, sẽ kiểm tra datVe để biết ghế nào đã đặt
+    # NOTE: Không cập nhật chuyenXe.gheNgoi vì nó là template chung cho tất cả các ngày
+    # Trạng thái ghế theo ngày được xác định bởi collection veXe
+    # Khi client query ghế, sẽ kiểm tra veXe để biết ghế nào đã đặt
     
     # Xóa khỏi Redis
     await seat_holding_service.confirm_booking(
@@ -250,8 +250,8 @@ async def cancel_payment(request: PaymentCancelRequest, current_user: dict = Dep
     db = mongodb_client.get_db()
     customer_id = current_user.get("maKH")
     
-    # Kiểm tra đã thanh toán chưa
-    existing = await db.datVe.find_one({"maDatVe": request.maDatVe})
+    # Kiểm tra đã thanh toán chưa - collection: veXe
+    existing = await db.veXe.find_one({"maDatVe": request.maDatVe})
     if existing:
         raise HTTPException(status_code=400, detail="Không thể hủy booking đã thanh toán")
     
@@ -292,11 +292,128 @@ async def get_my_bookings(current_user: dict = Depends(get_current_customer)):
     db = mongodb_client.get_db()
     customer_id = current_user.get("maKH")
     
-    bookings = await db.datVe.find({"maKH": customer_id}).sort("ngayDat", -1).to_list(100)
+    # Lấy danh sách vé từ collection veXe
+    bookings = await db.veXe.find({"maKH": customer_id}).sort("ngayDat", -1).to_list(100)
     
     result = []
     for b in bookings:
         b.pop("_id", None)
         result.append(BookingResponse.from_mongo(b))
+    
+    return result
+
+
+# ========== TICKET CANCELLATION MODELS & ENDPOINTS ==========
+from pydantic import BaseModel
+from typing import Optional
+
+class CancelRequest(BaseModel):
+    """Request yêu cầu hủy vé"""
+    maDatVe: str
+    lyDoHuy: str  # Mã lý do: change_schedule, health_issue, etc.
+    lyDoHuyText: str  # Lý do chi tiết
+    ghiChu: Optional[str] = None
+    tienHoanDuKien: float
+    phanTramHoan: int
+
+
+class CancelRequestResponse(BaseModel):
+    """Response sau khi gửi yêu cầu hủy"""
+    maYeuCauHuy: str
+    maDatVe: str
+    trangThai: str  # "pending" | "approved" | "rejected"
+    message: str
+
+
+@router.post("/cancel-request", response_model=CancelRequestResponse)
+async def create_cancel_request(request: CancelRequest, current_user: dict = Depends(get_current_customer)):
+    """
+    Tạo yêu cầu hủy vé - sẽ được admin duyệt
+    
+    Workflow:
+    1. Kiểm tra vé tồn tại và thuộc về user
+    2. Kiểm tra vé chưa bị hủy
+    3. Tạo yêu cầu hủy trong collection yeuCauHuyVe
+    4. Cập nhật trạng thái vé thành "cancel_pending"
+    """
+    db = mongodb_client.get_db()
+    customer_id = current_user.get("maKH")
+    
+    # Kiểm tra vé tồn tại
+    booking = await db.veXe.find_one({"maDatVe": request.maDatVe})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Không tìm thấy vé")
+    
+    # Kiểm tra quyền sở hữu
+    if booking.get("maKH") != customer_id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền hủy vé này")
+    
+    # Kiểm tra trạng thái vé
+    current_status = booking.get("trangThai")
+    if current_status == "cancelled":
+        raise HTTPException(status_code=400, detail="Vé đã được hủy trước đó")
+    if current_status == "cancel_pending":
+        raise HTTPException(status_code=400, detail="Yêu cầu hủy vé đang chờ xử lý")
+    if current_status == "refunded":
+        raise HTTPException(status_code=400, detail="Vé đã được hoàn tiền")
+    
+    # Tạo mã yêu cầu hủy
+    import time, random
+    ma_yeu_cau = f"HV{int(time.time()*1000)%100000:05d}{random.randint(100,999)}"
+    
+    # Lưu yêu cầu hủy vào collection yeuCauHuyVe
+    cancel_doc = {
+        "maYeuCauHuy": ma_yeu_cau,
+        "maDatVe": request.maDatVe,
+        "maKH": customer_id,
+        "tenKH": current_user.get("hoTen", ""),
+        "emailKH": current_user.get("email", ""),
+        "maTuyenXe": booking.get("maTuyenXe"),
+        "ngayDi": booking.get("ngayDi"),
+        "gioDi": booking.get("gioDi"),
+        "soGheNgoi": booking.get("soGheNgoi"),
+        "tongTien": booking.get("tongTien"),
+        "lyDoHuy": request.lyDoHuy,
+        "lyDoHuyText": request.lyDoHuyText,
+        "ghiChu": request.ghiChu,
+        "tienHoanDuKien": request.tienHoanDuKien,
+        "phanTramHoan": request.phanTramHoan,
+        "trangThai": "pending",  # pending | approved | rejected
+        "ngayTao": datetime.utcnow(),
+        "ngayXuLy": None,
+        "nguoiXuLy": None,
+        "lyDoTuChoi": None
+    }
+    
+    await db.yeuCauHuyVe.insert_one(cancel_doc)
+    
+    # Cập nhật trạng thái vé thành "cancel_pending"
+    await db.veXe.update_one(
+        {"maDatVe": request.maDatVe},
+        {"$set": {"trangThai": "cancel_pending"}}
+    )
+    
+    return CancelRequestResponse(
+        maYeuCauHuy=ma_yeu_cau,
+        maDatVe=request.maDatVe,
+        trangThai="pending",
+        message="Yêu cầu hủy vé đã được gửi thành công. Vui lòng chờ admin duyệt."
+    )
+
+
+@router.get("/cancel-requests")
+async def get_my_cancel_requests(current_user: dict = Depends(get_current_customer)):
+    """
+    Lấy danh sách yêu cầu hủy vé của user hiện tại
+    """
+    db = mongodb_client.get_db()
+    customer_id = current_user.get("maKH")
+    
+    requests = await db.yeuCauHuyVe.find({"maKH": customer_id}).sort("ngayTao", -1).to_list(100)
+    
+    result = []
+    for r in requests:
+        r.pop("_id", None)
+        result.append(r)
     
     return result

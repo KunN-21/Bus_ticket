@@ -10,6 +10,36 @@ from ..core.database import get_database
 
 router = APIRouter(prefix="/routes", tags=["routes"])
 
+@router.get("/debug/collections")
+async def debug_collections():
+    """
+    Debug: Liệt kê các collections trong database
+    """
+    try:
+        db = await get_database()
+        collections = await db.list_collection_names()
+        
+        # Thử lấy dữ liệu từ một số collection phổ biến
+        result = {
+            "collections": collections,
+            "samples": {}
+        }
+        
+        for col_name in collections[:5]:  # Chỉ lấy 5 collection đầu
+            col = db[col_name]
+            count = await col.count_documents({})
+            sample = await col.find_one({})
+            if sample:
+                sample.pop("_id", None)
+            result["samples"][col_name] = {
+                "count": count,
+                "sample_keys": list(sample.keys()) if sample else []
+            }
+        
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi debug: {str(e)}")
+
 @router.get("/cities")
 async def get_cities():
     """
@@ -18,8 +48,8 @@ async def get_cities():
     try:
         db = await get_database()
         
-        # Lấy tất cả tuyến xe
-        routes = await db.tuyenXe.find({}).to_list(length=None)
+        # Lấy tất cả chuyến xe
+        routes = await db.chuyenXe.find({}).to_list(length=None)
         
         # Lấy tất cả điểm đi và điểm đến unique
         cities = set()
@@ -42,8 +72,8 @@ async def get_all_routes():
     try:
         db = await get_database()
         
-        # Lấy tất cả tuyến xe (chú ý: tên collection là 'tuyenXe' với chữ t thường)
-        routes = await db.tuyenXe.find({}).to_list(length=None)
+        # Lấy tất cả chuyến xe (collection: chuyenXe)
+        routes = await db.chuyenXe.find({}).to_list(length=None)
         
         result = []
         for route in routes:
@@ -52,7 +82,7 @@ async def get_all_routes():
         
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi lấy danh sách tuyến xe: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy danh sách chuyến xe: {str(e)}")
 
 @router.post("/search", response_model=List[RouteSearchResponse])
 async def search_routes(search: RouteSearchRequest):
@@ -76,13 +106,13 @@ async def search_routes(search: RouteSearchRequest):
             "lichChay": {"$in": ["daily", None, ""]}
         }
 
-        routes = await db.tuyenXe.find(query).to_list(length=None)
+        routes = await db.chuyenXe.find(query).to_list(length=None)
 
         result = []
         for route in routes:
             # Build set of already booked seats for this route + date
             # Chỉ lấy các booking đã thanh toán (trangThai = "paid")
-            booked_docs = await db.datVe.find({
+            booked_docs = await db.veXe.find({
                 "maTuyenXe": route["maTuyenXe"], 
                 "ngayDi": search.ngayDi,
                 "trangThai": "paid"
@@ -126,10 +156,10 @@ async def get_route_detail(ma_tuyen_xe: str, date: Optional[str] = None):
     try:
         db = await get_database()
 
-        route = await db.tuyenXe.find_one({"maTuyenXe": ma_tuyen_xe})
+        route = await db.chuyenXe.find_one({"maTuyenXe": ma_tuyen_xe})
 
         if not route:
-            raise HTTPException(status_code=404, detail="Không tìm thấy tuyến xe")
+            raise HTTPException(status_code=404, detail="Không tìm thấy chuyến xe")
 
         # If date provided, combine to produce thoiGianKhoiHanh datetime and compute booked seats
         if date:
@@ -141,7 +171,7 @@ async def get_route_detail(ma_tuyen_xe: str, date: Optional[str] = None):
 
             # Compute booked seats for this maTuyenXe + date
             # Chỉ lấy các booking đã thanh toán (trangThai = "paid")
-            booked_docs = await db.datVe.find({
+            booked_docs = await db.veXe.find({
                 "maTuyenXe": ma_tuyen_xe, 
                 "ngayDi": date,
                 "trangThai": "paid"

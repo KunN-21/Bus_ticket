@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.core.middleware import get_current_customer
-from app.core.database import mongodb_client
+from app.services.redis_service import redis_service
 from typing import Dict
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -26,8 +26,6 @@ async def update_my_profile(
     Update current user profile
     Requires: Authorization Bearer token
     """
-    db = mongodb_client.get_db()
-    
     # Fields allowed to update
     allowed_fields = {"hoTen", "SDT", "diaChi"}
     update_fields = {k: v for k, v in update_data.items() if k in allowed_fields}
@@ -38,25 +36,23 @@ async def update_my_profile(
             detail="Không có trường nào được cập nhật"
         )
     
-    # Update user
-    result = await db.khachhang.update_one(
-        {"email": current_user["email"]},
-        {"$set": update_fields}
+    # Update user in Redis
+    updated_user = await redis_service.update_khach_hang(
+        current_user["maKH"],
+        update_fields
     )
     
-    if result.modified_count == 0:
+    if not updated_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Không có thay đổi nào"
         )
     
-    # Get updated user
-    updated_user = await db.khachhang.find_one({"email": current_user["email"]})
-    updated_user.pop("password")
-    updated_user.pop("_id")
+    # Remove password from response
+    updated_user_response = {k: v for k, v in updated_user.items() if k != "password"}
     
     return {
         "success": True,
         "message": "Cập nhật thông tin thành công",
-        "user": updated_user
+        "user": updated_user_response
     }

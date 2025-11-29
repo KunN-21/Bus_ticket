@@ -1,25 +1,25 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from app.core import redis_client, mongodb_client
+from app.core import redis_client
 from app.config import settings
 from app.routes import auth_router, users_router, routes_router
-from app.routes.admin_employees import router as admin_employees_router
-from app.routes.admin_customers import router as admin_customers_router
-from app.routes.roles import router as roles_router
-from app.routes.bookings import router as bookings_router
-from app.routes.admin_bookings import router as admin_bookings_router
-from app.routes.statistics import router as statistics_router
+from app.routes.bookings_redis import router as bookings_router
+
+# Admin routers - cần cập nhật sau
+# from app.routes.admin_employees import router as admin_employees_router
+# from app.routes.admin_customers import router as admin_customers_router
+# from app.routes.roles import router as roles_router
+# from app.routes.admin_bookings import router as admin_bookings_router
+# from app.routes.statistics import router as statistics_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup - Redis only
     await redis_client.connect()
-    await mongodb_client.connect()
     yield
     # Shutdown
     await redis_client.disconnect()
-    await mongodb_client.disconnect()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -46,13 +46,15 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router)
 app.include_router(users_router)
-app.include_router(admin_employees_router)
-app.include_router(admin_customers_router)
-app.include_router(roles_router)
 app.include_router(routes_router)
 app.include_router(bookings_router)
-app.include_router(admin_bookings_router)
-app.include_router(statistics_router)
+
+# Admin routers - tạm thời disable, cần cập nhật sang Redis
+# app.include_router(admin_employees_router)
+# app.include_router(admin_customers_router)
+# app.include_router(roles_router)
+# app.include_router(admin_bookings_router)
+# app.include_router(statistics_router)
 
 @app.get("/")
 async def root():
@@ -65,10 +67,8 @@ async def root():
 @app.get("/health")
 async def health_check():
     redis_status = "connected" if redis_client.get_client() is not None else "disconnected"
-    mongo_status = "connected" if mongodb_client.get_db() is not None else "disconnected"
     
     return {
         "status": "healthy",
-        "redis": redis_status,
-        "mongodb": mongo_status
+        "redis": redis_status
     }

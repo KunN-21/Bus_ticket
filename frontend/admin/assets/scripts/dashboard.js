@@ -114,185 +114,280 @@ function setupEventListeners() {
 // ===================================
 async function loadDashboardData() {
   try {
-    // Load stats (simulate API call)
-    loadStats();
-
-    // Load recent bookings
-    loadRecentBookings();
-
-    // Load active buses
-    loadActiveBuses();
+    // Load real data from API
+    await loadDashboardFromAPI();
   } catch (error) {
     console.error("Error loading dashboard data:", error);
     Toast.error("Không thể tải dữ liệu dashboard. Vui lòng thử lại sau.");
+    // Fallback to mock data if API fails
+    loadStatsFallback();
+    loadRecentBookingsFallback();
+    loadActiveBusesFallback();
   }
 }
 
 // ===================================
-// Load Statistics
+// Load Dashboard From API
 // ===================================
-function loadStats() {
-  // Simulate loading stats with animation
-  animateNumber("totalUsers", 1234, 1500);
-  animateNumber("totalBookings", 5678, 1500);
-  animateNumber("totalBuses", 45, 1500);
+async function loadDashboardFromAPI() {
+  const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/statistics/dashboard`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      // Try debug endpoint (no auth required)
+      const debugResponse = await fetch(`${API_BASE_URL}/statistics/dashboard/debug`);
+      if (debugResponse.ok) {
+        const data = await debugResponse.json();
+        renderDashboardData(data);
+        return;
+      }
+      throw new Error('Failed to load dashboard');
+    }
+    
+    const data = await response.json();
+    console.log('Dashboard data from API:', data);
+    renderDashboardData(data);
+    
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+}
 
-  // Format revenue
+// ===================================
+// Render Dashboard Data
+// ===================================
+function renderDashboardData(data) {
+  // Stats
+  if (data.stats) {
+    animateNumber("totalUsers", data.stats.totalUsers || 0, 1000);
+    animateNumber("totalBookings", data.stats.totalBookings || 0, 1000);
+    animateNumber("totalBuses", data.stats.totalBuses || 0, 1000);
+    
+    // Format revenue
+    setTimeout(() => {
+      const revEl = document.getElementById("totalRevenue");
+      if (revEl) {
+        const revenue = data.stats.totalRevenue || 0;
+        if (revenue >= 1000000) {
+          revEl.textContent = Math.round(revenue / 1000000) + "M";
+        } else if (revenue >= 1000) {
+          revEl.textContent = Math.round(revenue / 1000) + "K";
+        } else {
+          revEl.textContent = revenue.toLocaleString();
+        }
+      }
+    }, 1000);
+  }
+  
+  // Recent bookings
+  if (data.recentBookings && data.recentBookings.length > 0) {
+    renderRecentBookings(data.recentBookings);
+  } else {
+    loadRecentBookingsFallback();
+  }
+  
+  // Active buses
+  if (data.activeBuses && data.activeBuses.length > 0) {
+    renderActiveBuses(data.activeBuses);
+  } else {
+    loadActiveBusesFallback();
+  }
+  
+  // Update charts if data available
+  if (data.revenueChart && revenueChart) {
+    updateRevenueChartFromAPI(data.revenueChart);
+  }
+  
+  if (data.topRoutes && routesChart) {
+    updateRoutesChartFromAPI(data.topRoutes);
+  }
+}
+
+// ===================================
+// Render Recent Bookings
+// ===================================
+function renderRecentBookings(bookings) {
+  const tableBody = document.getElementById("recentBookingsTable");
+  if (!tableBody) return;
+  
+  if (bookings.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; color: #999;">
+          Chưa có đặt vé nào
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tableBody.innerHTML = bookings.map(booking => {
+    const statusClass = booking.status === 'paid' || booking.status === 'confirmed' ? 'completed' : 
+                       booking.status === 'cancelled' ? 'cancelled' : 'pending';
+    const statusText = booking.status === 'paid' || booking.status === 'confirmed' ? 'Đã thanh toán' :
+                      booking.status === 'cancelled' ? 'Đã hủy' : 'Chờ thanh toán';
+    
+    return `
+      <tr>
+        <td><strong>${booking.maVe || 'N/A'}</strong></td>
+        <td>${booking.customer || 'N/A'}</td>
+        <td>${booking.route || 'N/A'}</td>
+        <td>${booking.seats || 'N/A'}</td>
+        <td><strong>${formatCurrency(booking.price || 0)}</strong></td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+        <td>${formatTimeAgo(booking.time) || 'N/A'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ===================================
+// Render Active Buses
+// ===================================
+function renderActiveBuses(buses) {
+  const busList = document.getElementById("activeBusesList");
+  if (!busList) return;
+  
+  if (buses.length === 0) {
+    busList.innerHTML = `
+      <div class="bus-item">
+        <p style="text-align: center; color: #999;">Chưa có xe nào</p>
+      </div>
+    `;
+    return;
+  }
+  
+  busList.innerHTML = buses.map(bus => `
+    <div class="bus-item">
+      <div class="bus-info">
+        <h4>${bus.bienSo || bus.maXe || 'N/A'}</h4>
+        <p>${bus.loaiXe || 'Xe khách'} - ${bus.soChoNgoi || 34} chỗ</p>
+      </div>
+      <div class="bus-status ${bus.status || 'active'}">
+        <span class="status-dot ${bus.status || 'active'}"></span>
+        ${bus.status === 'maintenance' ? 'Bảo trì' : 
+          bus.status === 'inactive' ? 'Chờ khởi hành' : 'Hoạt động'}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===================================
+// Update Revenue Chart from API
+// ===================================
+function updateRevenueChartFromAPI(chartData) {
+  if (!revenueChart || !chartData || chartData.length === 0) return;
+  
+  const labels = chartData.map(item => item.month);
+  const data = chartData.map(item => item.revenue);
+  
+  revenueChart.data.labels = labels;
+  revenueChart.data.datasets[0].data = data;
+  revenueChart.update();
+}
+
+// ===================================
+// Update Routes Chart from API
+// ===================================
+function updateRoutesChartFromAPI(routesData) {
+  if (!routesChart || !routesData || routesData.length === 0) return;
+  
+  const labels = routesData.map(item => item.name);
+  const data = routesData.map(item => item.percentage);
+  
+  routesChart.data.labels = labels;
+  routesChart.data.datasets[0].data = data;
+  routesChart.update();
+}
+
+// ===================================
+// Format Time Ago
+// ===================================
+function formatTimeAgo(dateString) {
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+    
+    return date.toLocaleDateString('vi-VN');
+  } catch (e) {
+    return dateString;
+  }
+}
+
+// ===================================
+// Fallback Functions (Mock Data)
+// ===================================
+function loadStatsFallback() {
+  animateNumber("totalUsers", 0, 500);
+  animateNumber("totalBookings", 0, 500);
+  animateNumber("totalBuses", 0, 500);
   setTimeout(() => {
     const revEl = document.getElementById("totalRevenue");
-    if (revEl) revEl.textContent = "123M";
-  }, 1500);
+    if (revEl) revEl.textContent = "0";
+  }, 500);
 }
 
-// Animate numbers counting up
-function animateNumber(elementId, targetNumber, duration) {
-  const element = document.getElementById(elementId);
-  if (!element) return; // defensive: element may not exist in custom layouts
-  const startNumber = 0;
-  const increment = targetNumber / (duration / 16); // 60 FPS
-  let currentNumber = startNumber;
+function loadRecentBookingsFallback() {
+  const tableBody = document.getElementById("recentBookingsTable");
+  if (!tableBody) return;
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="7" style="text-align: center; color: #999;">
+        <i class="fas fa-info-circle"></i> Chưa có dữ liệu đặt vé
+      </td>
+    </tr>
+  `;
+}
 
-  const timer = setInterval(() => {
-    currentNumber += increment;
-    if (currentNumber >= targetNumber) {
-      currentNumber = targetNumber;
-      clearInterval(timer);
-    }
-    element.textContent = Math.floor(currentNumber).toLocaleString();
-  }, 16);
+function loadActiveBusesFallback() {
+  const busList = document.getElementById("activeBusesList");
+  if (!busList) return;
+  busList.innerHTML = `
+    <div class="bus-item" style="justify-content: center;">
+      <p style="text-align: center; color: #999;">
+        <i class="fas fa-info-circle"></i> Chưa có dữ liệu xe
+      </p>
+    </div>
+  `;
 }
 
 // ===================================
-// Load Recent Bookings
+// Load Statistics (DEPRECATED - kept for compatibility)
+// ===================================
+function loadStats() {
+  // Now handled by loadDashboardFromAPI
+  loadStatsFallback();
+}
+
+// ===================================
+// Load Recent Bookings (DEPRECATED - kept for compatibility)
 // ===================================
 function loadRecentBookings() {
-  const bookings = [
-    {
-      id: "BK001",
-      customer: "Nguyễn Văn A",
-      route: "TP.HCM - Hà Nội",
-      seats: "A12, A13",
-      price: "850,000đ",
-      status: "completed",
-      statusText: "Đã thanh toán",
-      time: "2 giờ trước",
-    },
-    {
-      id: "BK002",
-      customer: "Trần Thị B",
-      route: "TP.HCM - Đà Nẵng",
-      seats: "B05",
-      price: "450,000đ",
-      status: "pending",
-      statusText: "Chờ thanh toán",
-      time: "3 giờ trước",
-    },
-    {
-      id: "BK003",
-      customer: "Lê Văn C",
-      route: "Hà Nội - Hải Phòng",
-      seats: "C08, C09",
-      price: "250,000đ",
-      status: "completed",
-      statusText: "Đã thanh toán",
-      time: "5 giờ trước",
-    },
-    {
-      id: "BK004",
-      customer: "Phạm Thị D",
-      route: "TP.HCM - Nha Trang",
-      seats: "A01",
-      price: "350,000đ",
-      status: "cancelled",
-      statusText: "Đã hủy",
-      time: "6 giờ trước",
-    },
-    {
-      id: "BK005",
-      customer: "Hoàng Văn E",
-      route: "Đà Nẵng - Huế",
-      seats: "B12, B13, B14",
-      price: "450,000đ",
-      status: "completed",
-      statusText: "Đã thanh toán",
-      time: "8 giờ trước",
-    },
-  ];
-
-  const tableBody = document.getElementById("recentBookingsTable");
-  if (!tableBody) return; // defensive: element may not exist in some admin layouts
-  tableBody.innerHTML = bookings
-    .map(
-      (booking) => `
-        <tr>
-            <td><strong>${booking.id}</strong></td>
-            <td>${booking.customer}</td>
-            <td>${booking.route}</td>
-            <td>${booking.seats}</td>
-            <td><strong>${booking.price}</strong></td>
-            <td><span class="status-badge ${booking.status}">${booking.statusText}</span></td>
-            <td>${booking.time}</td>
-        </tr>
-    `
-    )
-    .join("");
+  loadRecentBookingsFallback();
 }
 
 // ===================================
-// Load Active Buses
+// Load Active Buses (DEPRECATED - kept for compatibility)
 // ===================================
 function loadActiveBuses() {
-  const buses = [
-    {
-      name: "Xe số 101",
-      route: "TP.HCM - Hà Nội",
-      status: "active",
-      statusText: "Đang chạy",
-    },
-    {
-      name: "Xe số 205",
-      route: "TP.HCM - Đà Nẵng",
-      status: "active",
-      statusText: "Đang chạy",
-    },
-    {
-      name: "Xe số 312",
-      route: "Hà Nội - Hải Phòng",
-      status: "maintenance",
-      statusText: "Bảo trì",
-    },
-    {
-      name: "Xe số 408",
-      route: "TP.HCM - Nha Trang",
-      status: "active",
-      statusText: "Đang chạy",
-    },
-    {
-      name: "Xe số 516",
-      route: "Đà Nẵng - Huế",
-      status: "inactive",
-      statusText: "Chờ khởi hành",
-    },
-  ];
-
-  const busList = document.getElementById("activeBusesList");
-  if (!busList) return; // defensive: skip if element missing
-  busList.innerHTML = buses
-    .map(
-      (bus) => `
-        <div class="bus-item">
-            <div class="bus-info">
-                <h4>${bus.name}</h4>
-                <p>${bus.route}</p>
-            </div>
-            <div class="bus-status ${bus.status}">
-                <span class="status-dot ${bus.status}"></span>
-                ${bus.statusText}
-            </div>
-        </div>
-    `
-    )
-    .join("");
+  loadActiveBusesFallback();
 }
 
 // ===================================
@@ -492,7 +587,7 @@ function loadPage(page) {
       Toast.info("Chức năng Quản lý Xe đang được phát triển");
       break;
     case "routes":
-      Toast.info("Chức năng Quản lý Tuyến đang được phát triển");
+      loadTripsManagementPage();
       break;
     case "bookings":
       loadBookingManagementPage();
@@ -2679,12 +2774,49 @@ function loadStatisticsPage() {
           <p class="page-subtitle">Phân tích doanh thu và hiệu suất kinh doanh</p>
         </div>
         
-        <!-- Period Selector -->
-        <div class="period-selector">
-          <button class="period-btn" data-period="today">Hôm nay</button>
-          <button class="period-btn" data-period="week">Tuần này</button>
-          <button class="period-btn active" data-period="month">Tháng này</button>
-          <button class="period-btn" data-period="year">Năm nay</button>
+        <div class="stats-header-actions">
+          <!-- Period Selector -->
+          <div class="period-selector">
+            <button class="period-btn" data-period="today">Hôm nay</button>
+            <button class="period-btn" data-period="week">Tuần này</button>
+            <button class="period-btn active" data-period="month">Tháng này</button>
+            <button class="period-btn" data-period="year">Năm nay</button>
+          </div>
+          
+          <!-- Export Dropdown -->
+          <div class="export-dropdown-wrapper">
+            <button class="btn-export-csv" id="btnExportCSV">
+              <i class="fas fa-file-download"></i>
+              <span>Xuất CSV</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="export-dropdown-menu" id="exportDropdownMenu">
+              <div class="export-menu-header">
+                <i class="fas fa-file-csv"></i>
+                <span>Chọn loại xuất dữ liệu</span>
+              </div>
+              <button class="export-menu-item" data-export="invoices">
+                <i class="fas fa-receipt"></i>
+                <span>Hóa đơn</span>
+              </button>
+              <button class="export-menu-item" data-export="tickets">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Vé xe</span>
+              </button>
+              <button class="export-menu-item" data-export="revenue">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Doanh thu</span>
+              </button>
+              <button class="export-menu-item" data-export="customers">
+                <i class="fas fa-users"></i>
+                <span>Khách hàng</span>
+              </button>
+              <button class="export-menu-item" data-export="routes">
+                <i class="fas fa-route"></i>
+                <span>Tuyến xe</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2807,6 +2939,13 @@ function loadStatisticsPage() {
         gap: 20px;
       }
       
+      .stats-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+      
       .period-selector {
         display: flex;
         gap: 8px;
@@ -2833,6 +2972,103 @@ function loadStatisticsPage() {
         background: var(--primary-gradient);
         color: white;
         box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+      }
+      
+      /* Export CSV Dropdown */
+      .export-dropdown-wrapper {
+        position: relative;
+      }
+      
+      .btn-export-csv {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
+      }
+      
+      .btn-export-csv:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(17, 153, 142, 0.4);
+      }
+      
+      .btn-export-csv i:last-child {
+        font-size: 12px;
+        transition: transform 0.3s ease;
+      }
+      
+      .btn-export-csv.active i:last-child {
+        transform: rotate(180deg);
+      }
+      
+      .export-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        min-width: 220px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        overflow: hidden;
+      }
+      
+      .export-dropdown-menu.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+      
+      .export-menu-header {
+        padding: 15px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .export-menu-item {
+        width: 100%;
+        padding: 12px 20px;
+        border: none;
+        background: white;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        color: #333;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      
+      .export-menu-item:last-child {
+        border-bottom: none;
+      }
+      
+      .export-menu-item:hover {
+        background: #f8f9fa;
+        padding-left: 25px;
+      }
+      
+      .export-menu-item i {
+        color: var(--primary-color);
+        width: 20px;
       }
       
       /* Stats Overview Grid */
@@ -3100,6 +3336,36 @@ function setupStatisticsEvents() {
   if (chartDaysSelect) {
     chartDaysSelect.addEventListener('change', () => {
       loadRevenueChart(parseInt(chartDaysSelect.value));
+    });
+  }
+  
+  // Export CSV dropdown toggle
+  const btnExportCSV = document.getElementById('btnExportCSV');
+  const exportDropdownMenu = document.getElementById('exportDropdownMenu');
+  
+  if (btnExportCSV && exportDropdownMenu) {
+    btnExportCSV.addEventListener('click', (e) => {
+      e.stopPropagation();
+      btnExportCSV.classList.toggle('active');
+      exportDropdownMenu.classList.toggle('active');
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.export-dropdown-wrapper')) {
+        btnExportCSV.classList.remove('active');
+        exportDropdownMenu.classList.remove('active');
+      }
+    });
+    
+    // Export menu items
+    document.querySelectorAll('.export-menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const exportType = item.getAttribute('data-export');
+        exportStatisticsCSV(exportType);
+        btnExportCSV.classList.remove('active');
+        exportDropdownMenu.classList.remove('active');
+      });
     });
   }
 }
@@ -3412,3 +3678,1344 @@ async function loadTopCustomersTable() {
       '<tr><td colspan="6" class="loading-cell">Không thể tải dữ liệu</td></tr>';
   }
 }
+
+
+// ===================================
+// TRIPS MANAGEMENT MODULE
+// ===================================
+
+// Trip Management State
+let tripsData = [];
+let currentEditTrip = null;
+let availableBuses = [];
+let availableDrivers = [];
+
+// ===================================
+// Load Trips Management Page
+// ===================================
+function loadTripsManagementPage() {
+  const content = document.querySelector('.content');
+  
+  content.innerHTML = `
+    <div class="trips-management-page">
+      <!-- Page Header -->
+      <div class="trips-page-header">
+        <div class="page-title-section">
+          <h2><i class="fas fa-route"></i> Quản lý Lịch chạy</h2>
+          <p class="page-subtitle">Quản lý và điều phối các chuyến xe theo lịch</p>
+        </div>
+        
+        <button class="btn-add-trip" id="btnAddTrip">
+          <i class="fas fa-plus-circle"></i>
+          <span>Thêm lịch chạy mới</span>
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="trips-stats" id="tripsStats">
+        <div class="trip-stat-card">
+          <div class="trip-stat-icon total">
+            <i class="fas fa-bus"></i>
+          </div>
+          <div class="trip-stat-info">
+            <h4 id="statTotalTrips">0</h4>
+            <p>Tổng lịch chạy</p>
+          </div>
+        </div>
+        <div class="trip-stat-card">
+          <div class="trip-stat-icon pending">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="trip-stat-info">
+            <h4 id="statPendingTrips">0</h4>
+            <p>Sắp khởi hành</p>
+          </div>
+        </div>
+        <div class="trip-stat-card">
+          <div class="trip-stat-icon active">
+            <i class="fas fa-road"></i>
+          </div>
+          <div class="trip-stat-info">
+            <h4 id="statActiveTrips">0</h4>
+            <p>Đang chạy</p>
+          </div>
+        </div>
+        <div class="trip-stat-card">
+          <div class="trip-stat-icon completed">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="trip-stat-info">
+            <h4 id="statCompletedTrips">0</h4>
+            <p>Hoàn thành</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="trips-controls">
+        <div class="trips-search">
+          <i class="fas fa-search"></i>
+          <input type="text" id="tripSearchInput" placeholder="Tìm kiếm theo tuyến, biển số xe...">
+        </div>
+        <select id="tripStatusFilter" class="status-filter">
+          <option value="">Tất cả trạng thái</option>
+          <option value="scheduled">Sắp khởi hành</option>
+          <option value="running">Đang chạy</option>
+          <option value="completed">Hoàn thành</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="trips-table-wrapper">
+        <div class="trips-table-header">
+          <i class="fas fa-table"></i>
+          <span>Danh sách lịch chạy</span>
+        </div>
+        <table class="trips-table">
+          <thead>
+            <tr>
+              <th>Mã lịch</th>
+              <th>Tuyến đường</th>
+              <th>Xe</th>
+              <th>Tài xế</th>
+              <th>Khởi hành</th>
+              <th>Giá vé</th>
+              <th>Ghế đặt</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="tripsTableBody">
+            <tr class="loading-row">
+              <td colspan="9">
+                <i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Trip Modal -->
+    <div class="trip-modal" id="tripModal">
+      <div class="trip-modal-content">
+        <div class="trip-modal-header">
+          <h3 id="tripModalTitle">
+            <i class="fas fa-plus-circle"></i>
+            <span>Thêm lịch chạy mới</span>
+          </h3>
+          <button class="modal-close-btn" onclick="closeTripModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="trip-modal-body">
+          <form id="tripForm">
+            <!-- Chọn tuyến đường -->
+            <div class="form-section">
+              <h4><i class="fas fa-map-marker-alt"></i> Chọn tuyến đường</h4>
+              <div class="form-group">
+                <label for="tripMaCX">Tuyến đường <span class="required">*</span></label>
+                <select id="tripMaCX" name="maCX" required>
+                  <option value="">-- Chọn tuyến đường --</option>
+                </select>
+                <small class="form-hint">Chọn tuyến đường có sẵn trong hệ thống</small>
+              </div>
+              <div id="routeInfo" class="route-info-box" style="display: none;">
+                <div class="route-display">
+                  <span id="routeDiemDi">-</span>
+                  <i class="fas fa-arrow-right"></i>
+                  <span id="routeDiemDen">-</span>
+                </div>
+                <div class="route-details">
+                  <span><i class="fas fa-road"></i> <span id="routeQuangDuong">0</span> km</span>
+                  <span><i class="fas fa-money-bill"></i> <span id="routeGiaVe">0</span> VNĐ</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thời gian -->
+            <div class="form-section">
+              <h4><i class="fas fa-calendar-alt"></i> Thời gian khởi hành</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="tripNgayKhoiHanh">Ngày khởi hành <span class="required">*</span></label>
+                  <input type="date" id="tripNgayKhoiHanh" name="ngayKhoiHanh" required>
+                </div>
+                <div class="form-group">
+                  <label for="tripGioKhoiHanh">Giờ khởi hành <span class="required">*</span></label>
+                  <input type="time" id="tripGioKhoiHanh" name="gioKhoiHanh" value="06:00" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="tripThoiGianChay">Thời gian chạy dự kiến</label>
+                <input type="text" id="tripThoiGianChay" name="thoiGianChay" placeholder="VD: 5 giờ" value="5 giờ">
+              </div>
+            </div>
+
+            <!-- Phương tiện & Tài xế -->
+            <div class="form-section">
+              <h4><i class="fas fa-bus"></i> Xe & Tài xế</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="tripMaXe">Chọn xe <span class="required">*</span></label>
+                  <select id="tripMaXe" name="maXe" required>
+                    <option value="">-- Chọn ngày trước --</option>
+                  </select>
+                  <small class="form-hint">Chỉ hiển thị xe đang hoạt động và không bận</small>
+                </div>
+                <div class="form-group">
+                  <label for="tripMaNV">Chọn tài xế <span class="required">*</span></label>
+                  <select id="tripMaNV" name="maNV" required>
+                    <option value="">-- Chọn ngày trước --</option>
+                  </select>
+                  <small class="form-hint">Chỉ hiển thị tài xế không bận</small>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="trip-modal-footer">
+          <button class="btn-modal secondary" onclick="closeTripModal()">Hủy</button>
+          <button class="btn-modal primary" onclick="saveTrip()">
+            <i class="fas fa-save"></i> Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trip Detail Modal -->
+    <div class="trip-detail-modal" id="tripDetailModal">
+      <div class="trip-detail-content">
+        <div class="trip-detail-header">
+          <h3><i class="fas fa-info-circle"></i> Chi tiết lịch chạy</h3>
+          <button class="modal-close-btn" onclick="closeTripDetailModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="trip-detail-body" id="tripDetailBody"></div>
+        <div class="trip-detail-footer">
+          <button class="btn-modal secondary" onclick="closeTripDetailModal()">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      /* Trips Management Styles */
+      .trips-management-page { padding: 0; }
+      
+      .trips-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      
+      .btn-add-trip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 28px;
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3);
+      }
+      
+      .btn-add-trip:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(255, 102, 0, 0.4);
+      }
+      
+      .trips-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+      }
+      
+      .trip-stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      
+      .trip-stat-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+      }
+      
+      .trip-stat-icon.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+      .trip-stat-icon.pending { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+      .trip-stat-icon.active { background: var(--green-gradient); }
+      .trip-stat-icon.completed { background: var(--orange-gradient); }
+      
+      .trip-stat-info h4 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+      }
+      
+      .trip-stat-info p {
+        font-size: 13px;
+        color: #666;
+        margin: 0;
+      }
+      
+      .trips-controls {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+      }
+      
+      .trips-search {
+        flex: 1;
+        min-width: 300px;
+        position: relative;
+      }
+      
+      .trips-search input {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      
+      .trips-search input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+      }
+      
+      .trips-search i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+      }
+      
+      .trips-table-wrapper {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        overflow: hidden;
+      }
+      
+      .trips-table-header {
+        padding: 20px 25px;
+        background: var(--primary-gradient);
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      
+      .trips-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      .trips-table thead { background: #f8fafc; }
+      
+      .trips-table th {
+        padding: 15px 15px;
+        text-align: left;
+        font-weight: 600;
+        color: #475569;
+        font-size: 12px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #e2e8f0;
+      }
+      
+      .trips-table td {
+        padding: 15px 15px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 14px;
+        color: #334155;
+      }
+      
+      .trips-table tbody tr:hover { background: #f8fafc; }
+      
+      .trip-route {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      
+      .trip-route .from-to {
+        font-weight: 600;
+        color: #333;
+      }
+      
+      .trip-route .distance {
+        font-size: 12px;
+        color: #666;
+      }
+      
+      .trip-status-badge {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .trip-status-badge.pending { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
+      .trip-status-badge.active { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+      .trip-status-badge.completed { background: rgba(158, 158, 158, 0.15); color: #9e9e9e; }
+      
+      .trips-actions {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .btn-trip-action {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .btn-trip-action.view {
+        background: rgba(102, 126, 234, 0.15);
+        color: #667eea;
+      }
+      
+      .btn-trip-action.cancel {
+        background: rgba(244, 67, 54, 0.15);
+        color: #f44336;
+      }
+      
+      .btn-trip-action:hover {
+        transform: translateY(-2px);
+      }
+      
+      /* Trip Modal */
+      .trip-modal, .trip-detail-modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      
+      .trip-modal.active, .trip-detail-modal.active { display: flex; }
+      
+      .trip-modal-content, .trip-detail-content {
+        background: white;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 700px;
+        max-height: 90vh;
+        overflow: hidden;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+        animation: modalSlideIn 0.3s ease;
+      }
+      
+      .trip-modal-header, .trip-detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        background: var(--primary-gradient);
+        color: white;
+      }
+      
+      .trip-modal-header h3, .trip-detail-header h3 {
+        margin: 0;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .trip-modal-body, .trip-detail-body {
+        padding: 24px;
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+      
+      .trip-modal-footer, .trip-detail-footer {
+        padding: 16px 24px;
+        background: #f8fafc;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        border-top: 1px solid #e2e8f0;
+      }
+      
+      .form-section {
+        margin-bottom: 24px;
+      }
+      
+      .form-section h4 {
+        font-size: 16px;
+        color: var(--primary-color);
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      
+      .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+      }
+      
+      .form-group .required {
+        color: #f44336;
+      }
+      
+      .form-group input, .form-group select {
+        padding: 12px 14px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+      }
+      
+      .form-group input:focus, .form-group select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+      }
+      
+      .form-hint {
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      
+      .btn-modal {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .btn-modal.primary {
+        background: var(--primary-gradient);
+        color: white;
+      }
+      
+      .btn-modal.secondary {
+        background: #e2e8f0;
+        color: #475569;
+      }
+      
+      .btn-modal:hover {
+        transform: translateY(-2px);
+      }
+      
+      /* Trip Detail */
+      .trip-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      
+      .trip-info-item {
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 10px;
+      }
+      
+      .trip-info-item label {
+        display: block;
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 4px;
+      }
+      
+      .trip-info-item span {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+      }
+      
+      .trip-route-display {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 24px;
+      }
+      
+      .trip-route-display .route-text {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      
+      .trip-route-display .route-arrow {
+        margin: 0 15px;
+      }
+      
+      .loading-row td {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+      
+      .empty-row td {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+      }
+      
+      @keyframes modalSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  `;
+
+  // Setup event listeners
+  setupTripsEvents();
+  
+  // Load data
+  loadTripsData();
+  loadTripsStats();
+}
+
+// ===================================
+// Setup Trips Events
+// ===================================
+function setupTripsEvents() {
+  // Add trip button
+  const btnAddTrip = document.getElementById('btnAddTrip');
+  if (btnAddTrip) {
+    btnAddTrip.addEventListener('click', () => openAddTripModal());
+  }
+
+  // Search
+  const tripSearchInput = document.getElementById('tripSearchInput');
+  if (tripSearchInput) {
+    tripSearchInput.addEventListener('input', (e) => filterTrips(e.target.value));
+  }
+
+  // Status filter
+  const tripStatusFilter = document.getElementById('tripStatusFilter');
+  if (tripStatusFilter) {
+    tripStatusFilter.addEventListener('change', (e) => filterTripsByStatus(e.target.value));
+  }
+
+  // Date change to load available buses/drivers
+  const tripNgayKhoiHanh = document.getElementById('tripNgayKhoiHanh');
+  if (tripNgayKhoiHanh) {
+    tripNgayKhoiHanh.addEventListener('change', (e) => {
+      if (e.target.value) {
+        loadAvailableBusesAndDrivers(e.target.value);
+      }
+    });
+  }
+}
+
+// ===================================
+// Load Trips Data
+// ===================================
+async function loadTripsData() {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/trips`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load trips');
+    
+    const data = await response.json();
+    console.log('Trips data:', data);
+    
+    tripsData = data;
+    renderTripsTable(data);
+  } catch (error) {
+    console.error('Error loading trips:', error);
+    Toast.error('Không thể tải danh sách chuyến xe');
+    renderEmptyTripsTable('Không thể tải dữ liệu');
+  }
+}
+
+// ===================================
+// Load Trips Stats
+// ===================================
+async function loadTripsStats() {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/trips/stats/overview`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to load stats');
+    
+    const stats = await response.json();
+    
+    document.getElementById('statTotalTrips').textContent = stats.total_trips || 0;
+    document.getElementById('statPendingTrips').textContent = stats.pending_trips || 0;
+    document.getElementById('statActiveTrips').textContent = stats.active_trips || 0;
+    document.getElementById('statCompletedTrips').textContent = stats.completed_trips || 0;
+  } catch (error) {
+    console.error('Error loading trips stats:', error);
+  }
+}
+
+// ===================================
+// Render Trips Table (lichChay-based)
+// ===================================
+function renderTripsTable(trips) {
+  const tableBody = document.getElementById('tripsTableBody');
+  if (!tableBody) return;
+  
+  if (!trips || trips.length === 0) {
+    renderEmptyTripsTable('Chưa có lịch chạy nào');
+    return;
+  }
+
+  tableBody.innerHTML = trips.map(trip => {
+    const statusClass = trip.trangThai || 'scheduled';
+    const statusText = trip.trangThai === 'completed' ? 'Hoàn thành' :
+                       trip.trangThai === 'running' ? 'Đang chạy' : 
+                       trip.trangThai === 'cancelled' ? 'Đã hủy' : 'Sắp khởi hành';
+    
+    const busInfo = trip.xeInfo ? `${trip.xeInfo.bienSoXe || trip.maXe}` : trip.maXe;
+    const driverInfo = trip.taiXeInfo ? trip.taiXeInfo.hoTen : 'N/A';
+    
+    // Get route info from chuyenXeInfo
+    const routeInfo = trip.chuyenXeInfo || {};
+    const diemDi = routeInfo.diemDi || 'N/A';
+    const diemDen = routeInfo.diemDen || 'N/A';
+    const giaVe = routeInfo.giaChuyenXe || 0;
+    
+    // Format departure date/time
+    let departureStr = 'N/A';
+    if (trip.ngayKhoiHanh && trip.gioKhoiHanh) {
+      departureStr = `${trip.ngayKhoiHanh} ${trip.gioKhoiHanh}`;
+    } else if (trip.ngayKhoiHanh) {
+      departureStr = trip.ngayKhoiHanh;
+    }
+    
+    // Get booked seats count
+    const soGheDaDat = trip.gheDaDat ? trip.gheDaDat.length : 0;
+    const canCancel = trip.trangThai === 'scheduled' && soGheDaDat === 0;
+    
+    return `
+      <tr>
+        <td><strong>${trip.maLC}</strong></td>
+        <td>
+          <div class="trip-route">
+            <span class="from-to">${diemDi} → ${diemDen}</span>
+            <span class="route-code">Tuyến: ${trip.maCX}</span>
+          </div>
+        </td>
+        <td>${busInfo}</td>
+        <td>${driverInfo}</td>
+        <td>${departureStr}</td>
+        <td><strong>${formatCurrency(giaVe)}</strong></td>
+        <td>${soGheDaDat} / ${trip.soGheTrong + soGheDaDat}</td>
+        <td><span class="trip-status-badge ${statusClass}">${statusText}</span></td>
+        <td>
+          <div class="trips-actions">
+            <button class="btn-trip-action view" onclick="viewTripDetail('${trip.maLC}')">
+              <i class="fas fa-eye"></i> Xem
+            </button>
+            ${canCancel ? `
+              <button class="btn-trip-action cancel" onclick="cancelTrip('${trip.maLC}')">
+                <i class="fas fa-times"></i> Hủy
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ===================================
+// Render Empty Trips Table
+// ===================================
+function renderEmptyTripsTable(message) {
+  const tableBody = document.getElementById('tripsTableBody');
+  if (!tableBody) return;
+  
+  tableBody.innerHTML = `
+    <tr class="empty-row">
+      <td colspan="9">
+        <i class="fas fa-inbox"></i> ${message}
+      </td>
+    </tr>
+  `;
+}
+
+// ===================================
+// Filter Trips (lichChay-based)
+// ===================================
+function filterTrips(searchTerm) {
+  const lowerSearch = searchTerm.toLowerCase();
+  
+  const filtered = tripsData.filter(trip => {
+    const routeInfo = trip.chuyenXeInfo || {};
+    return (trip.maLC || '').toLowerCase().includes(lowerSearch) ||
+      (trip.maCX || '').toLowerCase().includes(lowerSearch) ||
+      (routeInfo.diemDi || '').toLowerCase().includes(lowerSearch) ||
+      (routeInfo.diemDen || '').toLowerCase().includes(lowerSearch) ||
+      (trip.xeInfo?.bienSoXe || '').toLowerCase().includes(lowerSearch) ||
+      (trip.taiXeInfo?.hoTen || '').toLowerCase().includes(lowerSearch);
+  });
+  
+  renderTripsTable(filtered);
+}
+
+// ===================================
+// Filter Trips By Status
+// ===================================
+function filterTripsByStatus(status) {
+  if (!status) {
+    renderTripsTable(tripsData);
+    return;
+  }
+  
+  const filtered = tripsData.filter(trip => trip.trangThai === status);
+  renderTripsTable(filtered);
+}
+
+// ===================================
+// Open Add Trip Modal (lichChay-based)
+// ===================================
+async function openAddTripModal() {
+  currentEditTrip = null;
+  const modal = document.getElementById('tripModal');
+  const form = document.getElementById('tripForm');
+  const modalTitle = document.getElementById('tripModalTitle');
+  
+  if (form) form.reset();
+  if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-plus-circle"></i><span>Thêm lịch chạy mới</span>';
+  
+  // Set min date to today
+  const tripNgayKhoiHanh = document.getElementById('tripNgayKhoiHanh');
+  if (tripNgayKhoiHanh) {
+    const today = new Date().toISOString().split('T')[0];
+    tripNgayKhoiHanh.min = today;
+    tripNgayKhoiHanh.value = '';
+  }
+  
+  // Clear bus/driver selects
+  document.getElementById('tripMaXe').innerHTML = '<option value="">-- Chọn ngày trước --</option>';
+  document.getElementById('tripMaNV').innerHTML = '<option value="">-- Chọn ngày trước --</option>';
+  
+  // Clear route info
+  const routeInfoBox = document.getElementById('routeInfoBox');
+  if (routeInfoBox) routeInfoBox.style.display = 'none';
+  
+  // Load routes into selector
+  await loadRoutesForSelect();
+  
+  modal.classList.add('active');
+}
+
+// ===================================
+// Load Routes for Select (chuyenXe templates)
+// ===================================
+async function loadRoutesForSelect() {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/trips/routes`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load routes');
+    
+    const routes = await response.json();
+    const routeSelect = document.getElementById('tripMaCX');
+    
+    if (!routeSelect) return;
+    
+    routeSelect.innerHTML = '<option value="">-- Chọn tuyến đường --</option>' +
+      routes.map(route => 
+        `<option value="${route.maCX}" 
+          data-diemdi="${route.diemDi}" 
+          data-diemden="${route.diemDen}" 
+          data-gia="${route.giaChuyenXe || 0}">
+          ${route.diemDi} → ${route.diemDen} (${route.maCX})
+        </option>`
+      ).join('');
+    
+    // Add change event to show route info
+    routeSelect.addEventListener('change', (e) => {
+      const selectedOption = e.target.selectedOptions[0];
+      const routeInfoBox = document.getElementById('routeInfoBox');
+      
+      if (selectedOption && selectedOption.value) {
+        const diemDi = selectedOption.getAttribute('data-diemdi');
+        const diemDen = selectedOption.getAttribute('data-diemden');
+        const gia = selectedOption.getAttribute('data-gia');
+        
+        if (routeInfoBox) {
+          routeInfoBox.innerHTML = `
+            <strong>Tuyến:</strong> ${diemDi} → ${diemDen}<br>
+            <strong>Giá vé:</strong> ${formatCurrency(parseFloat(gia) || 0)}
+          `;
+          routeInfoBox.style.display = 'block';
+        }
+      } else {
+        if (routeInfoBox) routeInfoBox.style.display = 'none';
+      }
+    });
+  } catch (error) {
+    console.error('Error loading routes:', error);
+    Toast.error('Không thể tải danh sách tuyến đường');
+  }
+}
+
+// ===================================
+// Load Available Buses and Drivers (lichChay-based)
+// ===================================
+async function loadAvailableBusesAndDrivers(dateStr) {
+  const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+  // Send date in YYYY-MM-DD format
+  const formattedDate = dateStr; // Already in YYYY-MM-DD from input type="date"
+  
+  try {
+    // Load available buses
+    const busResponse = await fetch(`${API_BASE_URL}/admin/trips/available-buses?ngayKhoiHanh=${encodeURIComponent(formattedDate)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (busResponse.ok) {
+      availableBuses = await busResponse.json();
+      const busSelect = document.getElementById('tripMaXe');
+      
+      if (availableBuses.length === 0) {
+        busSelect.innerHTML = '<option value="">-- Không có xe khả dụng --</option>';
+      } else {
+        busSelect.innerHTML = '<option value="">-- Chọn xe --</option>' +
+          availableBuses.map(bus => 
+            `<option value="${bus.maXe}">${bus.bienSoXe} - ${bus.loaiXe || 'N/A'} (${bus.soGhe || bus.soChoNgoi || 0} chỗ)</option>`
+          ).join('');
+      }
+    }
+    
+    // Load available drivers
+    const driverResponse = await fetch(`${API_BASE_URL}/admin/trips/available-drivers?ngayKhoiHanh=${encodeURIComponent(formattedDate)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (driverResponse.ok) {
+      availableDrivers = await driverResponse.json();
+      const driverSelect = document.getElementById('tripMaNV');
+      
+      if (availableDrivers.length === 0) {
+        driverSelect.innerHTML = '<option value="">-- Không có tài xế khả dụng --</option>';
+      } else {
+        driverSelect.innerHTML = '<option value="">-- Chọn tài xế --</option>' +
+          availableDrivers.map(driver => 
+            `<option value="${driver.maNV}">${driver.hoTen} (${driver.SDT || 'N/A'})</option>`
+          ).join('');
+      }
+    }
+  } catch (error) {
+    console.error('Error loading available resources:', error);
+    Toast.error('Không thể tải danh sách xe/tài xế khả dụng');
+  }
+}
+
+// ===================================
+// Save Trip (lichChay-based)
+// ===================================
+async function saveTrip() {
+  const form = document.getElementById('tripForm');
+  
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  
+  const maCX = document.getElementById('tripMaCX').value;
+  const maXe = document.getElementById('tripMaXe').value;
+  const maNV = document.getElementById('tripMaNV').value;
+  const ngayKhoiHanh = document.getElementById('tripNgayKhoiHanh').value;
+  const gioKhoiHanh = document.getElementById('tripGioKhoiHanh').value;
+  const thoiGianChay = document.getElementById('tripThoiGianChay').value.trim() || '5 giờ';
+  
+  // Validate
+  if (!maCX) {
+    Toast.error('Vui lòng chọn tuyến đường!');
+    return;
+  }
+  
+  if (!ngayKhoiHanh) {
+    Toast.error('Vui lòng chọn ngày khởi hành!');
+    return;
+  }
+  
+  if (!gioKhoiHanh) {
+    Toast.error('Vui lòng chọn giờ khởi hành!');
+    return;
+  }
+  
+  if (!maXe) {
+    Toast.error('Vui lòng chọn xe!');
+    return;
+  }
+  
+  if (!maNV) {
+    Toast.error('Vui lòng chọn tài xế!');
+    return;
+  }
+  
+  const tripData = {
+    maCX: maCX,
+    maXe: maXe,
+    maNV: maNV,
+    ngayKhoiHanh: ngayKhoiHanh,   // YYYY-MM-DD
+    gioKhoiHanh: gioKhoiHanh,     // HH:MM
+    thoiGianChay: thoiGianChay
+  };
+  
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/trips`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(tripData)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Có lỗi xảy ra');
+    }
+    
+    Toast.success('Tạo lịch chạy thành công!');
+    closeTripModal();
+    
+    // Reload data
+    await loadTripsData();
+    await loadTripsStats();
+    
+  } catch (error) {
+    console.error('Error saving trip:', error);
+    Toast.error(error.message || 'Không thể tạo lịch chạy');
+  }
+}
+
+// ===================================
+// View Trip Detail (lichChay-based)
+// ===================================
+async function viewTripDetail(maLC) {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/trips/${maLC}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load trip detail');
+    
+    const trip = await response.json();
+    
+    const modal = document.getElementById('tripDetailModal');
+    const body = document.getElementById('tripDetailBody');
+    
+    // Get route info
+    const routeInfo = trip.chuyenXeInfo || {};
+    const diemDi = routeInfo.diemDi || 'N/A';
+    const diemDen = routeInfo.diemDen || 'N/A';
+    const giaVe = routeInfo.giaChuyenXe || 0;
+    
+    // Format departure
+    let departureStr = 'N/A';
+    if (trip.ngayKhoiHanh && trip.gioKhoiHanh) {
+      departureStr = `${trip.ngayKhoiHanh} lúc ${trip.gioKhoiHanh}`;
+    }
+    
+    const statusText = trip.trangThai === 'completed' ? 'Hoàn thành' :
+                       trip.trangThai === 'running' ? 'Đang chạy' : 
+                       trip.trangThai === 'cancelled' ? 'Đã hủy' : 'Sắp khởi hành';
+    
+    const soGheDaDat = trip.gheDaDat ? trip.gheDaDat.length : 0;
+    const tongGhe = trip.soGheTrong + soGheDaDat;
+    
+    body.innerHTML = `
+      <div class="trip-route-display">
+        <span class="route-text">
+          ${diemDi} <span class="route-arrow">→</span> ${diemDen}
+        </span>
+      </div>
+      
+      <div class="trip-info-grid">
+        <div class="trip-info-item">
+          <label>Mã lịch chạy</label>
+          <span>${trip.maLC}</span>
+        </div>
+        <div class="trip-info-item">
+          <label>Mã tuyến</label>
+          <span>${trip.maCX}</span>
+        </div>
+        <div class="trip-info-item">
+          <label>Trạng thái</label>
+          <span class="trip-status-badge ${trip.trangThai || 'scheduled'}">${statusText}</span>
+        </div>
+        <div class="trip-info-item">
+          <label>Khởi hành</label>
+          <span>${departureStr}</span>
+        </div>
+        <div class="trip-info-item">
+          <label>Thời gian chạy</label>
+          <span>${trip.thoiGianChay || 'N/A'}</span>
+        </div>
+        <div class="trip-info-item">
+          <label>Xe</label>
+          <span>${trip.xeInfo?.bienSoXe || trip.maXe} (${trip.xeInfo?.loaiXe || 'N/A'})</span>
+        </div>
+        <div class="trip-info-item">
+          <label>Tài xế</label>
+          <span>${trip.taiXeInfo?.hoTen || 'N/A'} ${trip.taiXeInfo?.SDT ? '(' + trip.taiXeInfo.SDT + ')' : ''}</span>
+        </div>
+        <div class="trip-info-item">
+          <label>Giá vé</label>
+          <span style="color: var(--primary-color); font-weight: 700;">${formatCurrency(giaVe)}</span>
+        </div>
+        <div class="trip-info-item">
+          <label>Ghế đã đặt</label>
+          <span>${soGheDaDat} / ${tongGhe} ghế</span>
+        </div>
+        ${trip.gheDaDat && trip.gheDaDat.length > 0 ? `
+        <div class="trip-info-item" style="grid-column: 1 / -1;">
+          <label>Danh sách ghế đã đặt</label>
+          <span>${trip.gheDaDat.join(', ')}</span>
+        </div>
+        ` : ''}
+      </div>
+    `;
+    
+    modal.classList.add('active');
+    
+  } catch (error) {
+    console.error('Error loading trip detail:', error);
+    Toast.error('Không thể tải chi tiết lịch chạy');
+  }
+}
+
+// ===================================
+// Cancel Trip (lichChay-based)
+// ===================================
+async function cancelTrip(maLC) {
+  const trip = tripsData.find(t => t.maLC === maLC);
+  if (!trip) return;
+  
+  // Get route info
+  const routeInfo = trip.chuyenXeInfo || {};
+  const diemDi = routeInfo.diemDi || 'N/A';
+  const diemDen = routeInfo.diemDen || 'N/A';
+  
+  // Kiểm tra ghế đã đặt
+  const soGheDaDat = trip.gheDaDat ? trip.gheDaDat.length : 0;
+  if (soGheDaDat > 0) {
+    Toast.error(`Không thể hủy lịch chạy này vì đã có ${soGheDaDat} ghế được đặt!`);
+    return;
+  }
+  
+  const confirmed = await Modal.confirm(
+    `Bạn có chắc chắn muốn hủy lịch chạy ${diemDi} → ${diemDen} (${trip.ngayKhoiHanh} ${trip.gioKhoiHanh})?`,
+    'Xác nhận hủy lịch chạy',
+    'warning'
+  );
+  
+  if (!confirmed) return;
+  
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/trips/${maLC}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Có lỗi xảy ra');
+    }
+    
+    Toast.success('Đã hủy lịch chạy thành công!');
+    
+    // Reload data
+    await loadTripsData();
+    await loadTripsStats();
+    
+  } catch (error) {
+    console.error('Error canceling trip:', error);
+    Toast.error(error.message || 'Không thể hủy lịch chạy');
+  }
+}
+
+// ===================================
+// Close Trip Modal
+// ===================================
+function closeTripModal() {
+  const modal = document.getElementById('tripModal');
+  if (modal) modal.classList.remove('active');
+  currentEditTrip = null;
+}
+
+// ===================================
+// Close Trip Detail Modal
+// ===================================
+function closeTripDetailModal() {
+  const modal = document.getElementById('tripDetailModal');
+  if (modal) modal.classList.remove('active');
+}
+
+// ===================================
+// Export Statistics CSV with UTF-8
+// ===================================
+async function exportStatisticsCSV(type) {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    let url = '';
+    let filename = '';
+    
+    // Determine endpoint and filename based on type and period
+    const periodText = getPeriodText(currentStatsPeriod);
+    const dateStr = formatDateForFilename();
+    
+    switch(type) {
+      case 'invoices':
+        url = `${API_BASE_URL}/statistics/export/invoices?period=${currentStatsPeriod}`;
+        filename = `hoa_don_${periodText}_${dateStr}.csv`;
+        break;
+      case 'tickets':
+        url = `${API_BASE_URL}/statistics/export/tickets?period=${currentStatsPeriod}`;
+        filename = `ve_xe_${periodText}_${dateStr}.csv`;
+        break;
+      case 'revenue':
+        url = `${API_BASE_URL}/statistics/export/revenue`;
+        filename = `doanh_thu_${dateStr}.csv`;
+        break;
+      case 'customers':
+        url = `${API_BASE_URL}/statistics/export/customers?period=${currentStatsPeriod}`;
+        filename = `khach_hang_${periodText}_${dateStr}.csv`;
+        break;
+      case 'routes':
+        url = `${API_BASE_URL}/statistics/export/routes?period=${currentStatsPeriod}`;
+        filename = `tuyen_xe_${periodText}_${dateStr}.csv`;
+        break;
+      default:
+        Toast.error('Loại xuất không hợp lệ');
+        return;
+    }
+    
+    Toast.info('Đang chuẩn bị file xuất CSV...');
+    
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Không thể xuất dữ liệu');
+    }
+    
+    // Get the CSV content with UTF-8 BOM
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(downloadUrl);
+    document.body.removeChild(a);
+    
+    Toast.success(`Xuất file CSV thành công! (${filename})`);
+    
+  } catch (error) {
+    console.error('Export CSV error:', error);
+    Toast.error(error.message || 'Không thể xuất file CSV');
+  }
+}
+
+// ===================================
+// Get Period Text for Filename
+// ===================================
+function getPeriodText(period) {
+  const periodMap = {
+    'today': 'hom_nay',
+    'week': 'tuan_nay',
+    'month': 'thang_nay',
+    'year': 'nam_nay'
+  };
+  return periodMap[period] || 'tong_quat';
+}
+
+// ===================================
+// Format Date for Filename
+// ===================================
+function formatDateForFilename() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}${month}${day}`;
+}
+
+// Make functions globally accessible
+window.viewTripDetail = viewTripDetail;
+window.cancelTrip = cancelTrip;
+window.closeTripModal = closeTripModal;
+window.closeTripDetailModal = closeTripDetailModal;
+window.saveTrip = saveTrip;

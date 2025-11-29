@@ -259,14 +259,21 @@ class RouteSearchResponse(BaseModel):
     maXe: str
     diemDi: str
     diemDen: str
-    quangDuong: float
-    giaChuyenXe: float
-    thoiGianXuatBen: str
-    thoiGianDenDuKien: str
-    thoiGianChay: str
-    loaiXe: str
-    soGheTrong: int
-    soGheDaDat: int
+    quangDuong: float = 0
+    giaChuyenXe: float = 0
+    thoiGianXuatBen: str = ""
+    thoiGianDenDuKien: str = ""
+    thoiGianChay: str = ""  # Có thể là string hoặc số phút
+    loaiXe: str = ""
+    soGheTrong: int = 0
+    soGheDaDat: int = 0
+    ngayKhoiHanh: str = ""  # Thêm ngày khởi hành
+    gioKhoiHanh: str = ""   # Thêm giờ khởi hành
+    
+    # Alias fields cho frontend compatibility
+    maTuyenXe: str = ""     # Alias của maCX
+    giaVe: float = 0        # Alias của giaChuyenXe
+    thoiGianQuangDuong: str = ""  # Alias của thoiGianChay
 
 
 class BookingRequest(BaseModel):

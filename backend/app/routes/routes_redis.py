@@ -172,10 +172,15 @@ async def search_routes(search: RouteSearchRequest):
             
             for lich_chay in lich_chay_list:
                 maLC = lich_chay.get("maLC") or lich_chay.get("maLich", "")
+                ngayKhoiHanh = lich_chay.get("ngayKhoiHanh", "")
+                
+                # Filter theo ngày đi nếu có
+                if ngayKhoiHanh and ngayKhoiHanh != search.ngayDi:
+                    continue
                 
                 # Lấy tất cả ghế của xe
                 ghe_list = await redis_service.get_ghe_by_xe(maXe)
-                total_seats = len(ghe_list) if ghe_list else xe.get("soChoNgoi", xe.get("soGhe", 34))
+                total_seats = len(ghe_list) if ghe_list else xe.get("soGhe", 34)
                 
                 # Lấy ghế đã đặt cho lịch chạy + ngày này
                 # Chỉ tính vé có trạng thái "paid" hoặc "confirmed"
@@ -184,20 +189,36 @@ async def search_routes(search: RouteSearchRequest):
                 # Tính số ghế còn trống
                 so_ghe_trong = total_seats - len(booked_seats)
                 
+                # Convert thoiGianChay sang string nếu là số
+                thoi_gian_chay = lich_chay.get("thoiGianChay", chuyen_xe.get("thoiGianDuKien", ""))
+                if isinstance(thoi_gian_chay, (int, float)):
+                    # Chuyển từ phút sang định dạng "X giờ Y phút"
+                    hours = int(thoi_gian_chay) // 60
+                    mins = int(thoi_gian_chay) % 60
+                    thoi_gian_chay = f"{hours} giờ" if mins == 0 else f"{hours} giờ {mins} phút"
+                
+                gia_ve = float(chuyen_xe.get("giaChuyenXe", chuyen_xe.get("giaVe", 0)))
+                
                 result.append(RouteSearchResponse(
                     maCX=maCX,
                     maLC=maLC,
                     maXe=maXe,
                     diemDi=chuyen_xe.get("diemDi", ""),
                     diemDen=chuyen_xe.get("diemDen", ""),
-                    quangDuong=chuyen_xe.get("quangDuong", chuyen_xe.get("khoangCach", 0)),
-                    giaChuyenXe=chuyen_xe.get("giaChuyenXe", chuyen_xe.get("giaVe", 0)),
-                    thoiGianXuatBen=lich_chay.get("thoiGianXuatBen", lich_chay.get("gioKhoiHanh", "")),
-                    thoiGianDenDuKien=lich_chay.get("thoiGianDenDuKien", ""),
-                    thoiGianChay=lich_chay.get("thoiGianChay", chuyen_xe.get("thoiGianDuKien", "")),
+                    quangDuong=float(chuyen_xe.get("quangDuong", chuyen_xe.get("khoangCach", 0))),
+                    giaChuyenXe=gia_ve,
+                    thoiGianXuatBen=str(lich_chay.get("thoiGianXuatBen", lich_chay.get("gioKhoiHanh", ""))),
+                    thoiGianDenDuKien=str(lich_chay.get("thoiGianDenDuKien", "")),
+                    thoiGianChay=str(thoi_gian_chay),
                     loaiXe=xe.get("loaiXe", ""),
                     soGheTrong=so_ghe_trong,
-                    soGheDaDat=len(booked_seats)
+                    soGheDaDat=len(booked_seats),
+                    ngayKhoiHanh=ngayKhoiHanh,
+                    gioKhoiHanh=lich_chay.get("gioKhoiHanh", ""),
+                    # Alias fields cho frontend
+                    maTuyenXe=maCX,
+                    giaVe=gia_ve,
+                    thoiGianQuangDuong=str(thoi_gian_chay)
                 ))
         
         return result
@@ -267,9 +288,13 @@ async def get_schedule_detail(maLC: str, date: Optional[str] = None):
 
 
 @router.get("/{maCX}")
-async def get_route_detail(maCX: str):
+async def get_route_detail(maCX: str, date: Optional[str] = None):
     """
-    Lấy chi tiết chuyến xe
+    Lấy chi tiết chuyến xe và danh sách ghế
+    
+    Args:
+        maCX: Mã chuyến xe
+        date: Ngày đi (YYYY-MM-DD) để kiểm tra ghế đã đặt
     """
     try:
         chuyen_xe = await redis_service.get_chuyen_xe(maCX)
@@ -277,20 +302,64 @@ async def get_route_detail(maCX: str):
         if not chuyen_xe:
             raise HTTPException(status_code=404, detail="Không tìm thấy chuyến xe")
         
+        maXe = chuyen_xe.get("maXe", "")
+        
         # Lấy thông tin xe
-        xe = await redis_service.get_xe(chuyen_xe.get("maXe", ""))
+        xe = await redis_service.get_xe(maXe)
         
         # Lấy danh sách lịch chạy
         lich_chay_list = await redis_service.get_lich_chay_by_chuyen(maCX)
         
+        # Filter theo ngày nếu có
+        if date:
+            lich_chay_list = [lc for lc in lich_chay_list if lc.get("ngayKhoiHanh") == date]
+        
         # Lấy danh sách ghế của xe
-        ghe_list = await redis_service.get_ghe_by_xe(chuyen_xe.get("maXe", ""))
+        ghe_list = await redis_service.get_ghe_by_xe(maXe)
+        
+        # Lấy ghế đã đặt nếu có date và lịch chạy
+        booked_seats = []
+        if date and lich_chay_list:
+            for lc in lich_chay_list:
+                maLC = lc.get("maLC") or lc.get("maLich", "")
+                if maLC:
+                    seats = await redis_service.get_booked_seats_by_lich_chay(maLC)
+                    booked_seats.extend(seats)
+        
+        # Thêm trạng thái cho từng ghế
+        ghe_with_status = []
+        for ghe in ghe_list:
+            maGhe = ghe.get("maGhe", "")
+            ghe_with_status.append({
+                **ghe,
+                "dadat": maGhe in booked_seats,
+                "trangThai": "booked" if maGhe in booked_seats else "available"
+            })
+        
+        # Tính giá vé
+        gia_ve = float(chuyen_xe.get("giaChuyenXe", chuyen_xe.get("giaVe", 0)))
+        
+        # Convert thoiGianChay nếu là số
+        thoi_gian_chay = chuyen_xe.get("thoiGianDuKien", "")
+        if lich_chay_list:
+            thoi_gian_chay = lich_chay_list[0].get("thoiGianChay", thoi_gian_chay)
+            if isinstance(thoi_gian_chay, (int, float)):
+                hours = int(thoi_gian_chay) // 60
+                mins = int(thoi_gian_chay) % 60
+                thoi_gian_chay = f"{hours} giờ" if mins == 0 else f"{hours} giờ {mins} phút"
         
         return {
             **chuyen_xe,
+            "maTuyenXe": maCX,  # Alias
+            "giaVe": gia_ve,    # Alias
+            "thoiGianQuangDuong": str(thoi_gian_chay),  # Alias
+            "thoiGianXuatBen": lich_chay_list[0].get("gioKhoiHanh", "") if lich_chay_list else "",
+            "thoiGianDenDuKien": lich_chay_list[0].get("thoiGianDenDuKien", "") if lich_chay_list else "",
             "xe": xe,
             "lichChay": lich_chay_list,
-            "gheNgoi": ghe_list
+            "gheNgoi": ghe_with_status,
+            "soGheTrong": len([g for g in ghe_with_status if g["trangThai"] == "available"]),
+            "soGheDaDat": len(booked_seats)
         }
     except HTTPException:
         raise

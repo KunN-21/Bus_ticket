@@ -18,6 +18,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 import json
 import time
+from app.utils import get_current_time_hcm, get_current_timestamp_hcm, format_datetime_hcm
 import random
 
 from app.models.entities import (
@@ -101,9 +102,8 @@ class CancelRequestResponse(BaseModel):
 
 
 class TicketLookupRequest(BaseModel):
-    """Request tra cứu vé"""
-    maVe: Optional[str] = None  # Mã vé
-    soDienThoai: Optional[str] = None  # Số điện thoại
+    """Request tra cứu vé - chỉ bằng mã vé"""
+    maVe: str  # Mã vé (bắt buộc)
 
 def generate_id(prefix: str) -> str:
     """Tạo mã ID unique"""
@@ -169,7 +169,7 @@ async def create_pending_booking(
         }
     
     # Tạo pending booking
-    expire_at = datetime.utcnow().timestamp() + HOLD_DURATION
+    expire_at = get_current_timestamp_hcm() + HOLD_DURATION
     booking_info = {
         "maHD": maHD,
         "maLC": maLC,
@@ -178,8 +178,8 @@ async def create_pending_booking(
         "danhSachGhe": danhSachGhe,
         "maKH": maKH,
         "tongTien": tongTien,
-        "created_at": datetime.utcnow().isoformat(),
-        "expire_at": datetime.utcnow().timestamp() + HOLD_DURATION
+        "created_at": format_datetime_hcm(),
+        "expire_at": get_current_timestamp_hcm() + HOLD_DURATION
     }
     
     pending_bookings[sessionId] = booking_info
@@ -365,7 +365,7 @@ async def create_booking(request: BookingCreateRequest, current_user: dict = Dep
         danhSachGhe=request.danhSachGhe,
         tongTien=tong_tien,
         trangThai="pending",
-        ngayDat=datetime.utcnow().isoformat(),
+        ngayDat=format_datetime_hcm(),
         qrCode=qr_code,
         paymentInfo={
             "amount": tong_tien,
@@ -412,7 +412,7 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
     if booking_info.get("maKH") != maKH:
         raise HTTPException(status_code=403, detail="Bạn không có quyền với booking này")
     
-    now = datetime.utcnow()
+    now = get_current_time_hcm()
     
     # Tạo hóa đơn
     hoa_don = {
@@ -580,8 +580,8 @@ async def create_cancel_request(request: CancelRequest, current_user: dict = Dep
         "tienHoanDuKien": request.tienHoanDuKien,
         "phanTramHoan": request.phanTramHoan,
         "trangThai": "pending",
-        "ngayTao": datetime.now().isoformat(),
-        "ngayCapNhat": datetime.now().isoformat()
+        "ngayTao": format_datetime_hcm(),
+        "ngayCapNhat": format_datetime_hcm()
     }
     
     # Lưu vào Redis
@@ -590,7 +590,7 @@ async def create_cancel_request(request: CancelRequest, current_user: dict = Dep
     # Cập nhật trạng thái vé
     update_data = {
         "trangThai": "cancel_pending",
-        "ngayCapNhat": datetime.now().isoformat()
+        "ngayCapNhat": format_datetime_hcm()
     }
     await redis_service.update_ve_xe(request.maDatVe, update_data)
     
@@ -605,85 +605,77 @@ async def create_cancel_request(request: CancelRequest, current_user: dict = Dep
 @router.post("/lookup")
 async def lookup_ticket(request: TicketLookupRequest):
     """
-    Tra cứu vé không cần đăng nhập
-    Có thể tra cứu bằng mã vé hoặc số điện thoại
+    Tra cứu vé không cần đăng nhập - CHỈ bằng mã vé
     """
-    # Validate input - trim whitespace and check if empty
+    # Validate and trim input
     ma_ve = request.maVe.strip() if request.maVe else None
-    so_dien_thoai = request.soDienThoai.strip() if request.soDienThoai else None
     
-    if not ma_ve and not so_dien_thoai:
+    if not ma_ve:
         raise HTTPException(
             status_code=400, 
-            detail="Vui lòng nhập mã vé hoặc số điện thoại"
+            detail="Vui lòng nhập mã vé"
         )
     
-    result = []
-    
     # Tra cứu theo mã vé
-    if ma_ve:
-        ve = await redis_service.get_ve_xe(ma_ve)
-        if ve:
-            # Lấy thông tin lịch chạy
-            lich_chay = await redis_service.get_lich_chay(ve.get("maLC", ""))
-            chuyen_xe = None
-            if lich_chay:
-                chuyen_xe = await redis_service.get_chuyen_xe(lich_chay.get("maCX", ""))
-            
-            # Lấy thông tin khách hàng (ẩn một phần)
-            khach_hang = await redis_service.get_khach_hang(ve.get("maKH", ""))
-            
-            result.append({
-                "maVe": ve.get("maVe"),
-                "trangThai": ve.get("trangThai"),
-                "soGheNgoi": ve.get("soGheNgoi"),
-                "ngayDi": ve.get("ngayDi"),
-                "gioDi": lich_chay.get("gioDi") if lich_chay else None,
-                "gioKetThuc": lich_chay.get("gioKetThuc") if lich_chay else None,
-                "diemDi": chuyen_xe.get("diemDi") if chuyen_xe else None,
-                "diemDen": chuyen_xe.get("diemDen") if chuyen_xe else None,
-                "loaiXe": chuyen_xe.get("loaiXe") if chuyen_xe else None,
-                "giaVe": ve.get("tongTien"),
-                "tenKH": khach_hang.get("hoTen") if khach_hang else "N/A",
-                "sdt": _mask_phone(khach_hang.get("soDienThoai", "")) if khach_hang else "N/A",
-                "bienSoXe": chuyen_xe.get("bienSoXe") if chuyen_xe else None,
-                "ngayDat": ve.get("ngayDat")
-            })
-    
-    # Tra cứu theo số điện thoại
-    if so_dien_thoai:
-        # Tìm khách hàng theo số điện thoại
-        all_ve = await redis_service.get_all("veXe")
-        for ve in all_ve:
-            khach_hang = await redis_service.get_khach_hang(ve.get("maKH", ""))
-            if khach_hang and khach_hang.get("soDienThoai") == so_dien_thoai:
-                # Lấy thông tin lịch chạy
-                lich_chay = await redis_service.get_lich_chay(ve.get("maLC", ""))
-                chuyen_xe = None
-                if lich_chay:
-                    chuyen_xe = await redis_service.get_chuyen_xe(lich_chay.get("maCX", ""))
-                
-                result.append({
-                    "maVe": ve.get("maVe"),
-                    "trangThai": ve.get("trangThai"),
-                    "soGheNgoi": ve.get("soGheNgoi"),
-                    "ngayDi": ve.get("ngayDi"),
-                    "gioDi": lich_chay.get("gioDi") if lich_chay else None,
-                    "gioKetThuc": lich_chay.get("gioKetThuc") if lich_chay else None,
-                    "diemDi": chuyen_xe.get("diemDi") if chuyen_xe else None,
-                    "diemDen": chuyen_xe.get("diemDen") if chuyen_xe else None,
-                    "loaiXe": chuyen_xe.get("loaiXe") if chuyen_xe else None,
-                    "giaVe": ve.get("tongTien"),
-                    "tenKH": khach_hang.get("hoTen") if khach_hang else "N/A",
-                    "sdt": _mask_phone(khach_hang.get("soDienThoai", "")),
-                    "bienSoXe": chuyen_xe.get("bienSoXe") if chuyen_xe else None,
-                    "ngayDat": ve.get("ngayDat")
-                })
-    
-    if not result:
+    ve = await redis_service.get_ve_xe(ma_ve)
+    if not ve:
         raise HTTPException(status_code=404, detail="Không tìm thấy vé")
     
-    return {"tickets": result, "total": len(result)}
+    # Lấy thông tin lịch chạy
+    lich_chay = await redis_service.get_lich_chay(ve.get("maLC", ""))
+    chuyen_xe = None
+    xe = None
+    ngay_di = None
+    gio_di = None
+    gio_ket_thuc = None
+    
+    if lich_chay:
+        chuyen_xe = await redis_service.get_chuyen_xe(lich_chay.get("maCX", ""))
+        
+        # Lấy thông tin xe từ chuyen_xe
+        if chuyen_xe:
+            xe = await redis_service.get_xe(chuyen_xe.get("maXe", ""))
+        
+        # Lấy ngày đi và giờ đi từ lich_chay
+        # ngayKhoiHanh: "2025-11-29", gioKhoiHanh/thoiGianXuatBen: "10:00"
+        ngay_di = lich_chay.get("ngayKhoiHanh")
+        gio_di = lich_chay.get("gioKhoiHanh") or lich_chay.get("thoiGianXuatBen")
+        gio_ket_thuc = lich_chay.get("thoiGianDenDuKien")
+        
+        print(f"DEBUG: lich_chay data: {lich_chay}")
+        print(f"DEBUG: Extracted - ngay_di: {ngay_di}, gio_di: {gio_di}, gio_ket_thuc: {gio_ket_thuc}")
+    
+    # Lấy thông tin ghế ngồi
+    ghe_ngoi = await redis_service.get_ghe_ngoi(ve.get("maGhe", ""))
+    so_ghe = ghe_ngoi.get("soGhe") if ghe_ngoi else None
+    print(f"DEBUG: maGhe: {ve.get('maGhe')}, ghe_ngoi: {ghe_ngoi}, so_ghe: {so_ghe}")
+    
+    # Lấy thông tin hóa đơn
+    hoa_don = await redis_service.get_hoa_don(ve.get("maHD", ""))
+    tong_tien = hoa_don.get("tongTien") if hoa_don else None
+    ngay_dat = hoa_don.get("ngayLap") if hoa_don else None
+    
+    # Lấy thông tin khách hàng (ẩn một phần)
+    khach_hang = await redis_service.get_khach_hang(ve.get("maKH", ""))
+    
+    ticket_info = {
+        "maVe": ve.get("maVe"),
+        "trangThai": ve.get("trangThai"),
+        "soGheNgoi": so_ghe,
+        "ngayDi": ngay_di,
+        "gioDi": gio_di,
+        "gioKetThuc": gio_ket_thuc,
+        "diemDi": chuyen_xe.get("diemDi") if chuyen_xe else None,
+        "diemDen": chuyen_xe.get("diemDen") if chuyen_xe else None,
+        "loaiXe": xe.get("loaiXe") if xe else None,
+        "giaVe": tong_tien,
+        "tenKH": khach_hang.get("hoTen") if khach_hang else "N/A",
+        "sdt": _mask_phone(khach_hang.get("SDT", "")) if khach_hang else "N/A",
+        "bienSoXe": xe.get("bienSoXe") if xe else None,
+        "ngayDat": ngay_dat
+    }
+    
+    return {"tickets": [ticket_info], "total": 1}
 
 
 def _mask_phone(phone: str) -> str:

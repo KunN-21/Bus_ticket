@@ -313,6 +313,7 @@
         <nav class="nav-menu">
           <a href="index.html" class="nav-link">Trang chủ</a>
           <a href="index.html#lookup" class="nav-link">Tra cứu vé</a>
+          <a href="index.html#invoice" class="nav-link">Hóa đơn</a>
           <a href="index.html#about" class="nav-link">Về chúng tôi</a>
         </nav>
 
@@ -428,14 +429,14 @@
   <div class="cancel-modal-overlay" id="cancelModal">
     <div class="cancel-modal">
       <div class="cancel-modal-header">
-        <h3>🎫 Yêu cầu hủy vé</h3>
+        <h3>Yêu cầu hủy vé</h3>
         <button class="cancel-modal-close" onclick="closeCancelModal()">✕</button>
       </div>
       <div class="cancel-modal-body">
         <div class="ticket-info-summary" id="cancelTicketInfo"></div>
 
         <div class="cancel-policy">
-          <h4>📋 Chính sách hủy vé</h4>
+          <h4>Chính sách hủy vé</h4>
           <ul>
             <li><strong>Hủy trước 24h:</strong> Hoàn 80% giá vé</li>
             <li><strong>Hủy trước 12h:</strong> Hoàn 50% giá vé</li>
@@ -488,7 +489,7 @@
   <div class="detail-modal-overlay" id="detailModal">
     <div class="detail-modal">
       <div class="detail-modal-header">
-        <h3>🎫 Chi tiết vé xe</h3>
+        <h3>Chi tiết vé xe</h3>
         <button class="detail-modal-close" onclick="closeDetailModal()">✕</button>
       </div>
       <div class="detail-modal-body" id="detailModalBody">
@@ -1007,17 +1008,154 @@
 
     function formatCurrency(amount) {
       return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+      }).format(amount);
+    }
 
-        const diemDi = ticket.chuyenXe?.diemDi || ticket.diemDi || 'N/A';
-        const diemDen = ticket.chuyenXe?.diemDen || ticket.diemDen || 'N/A';
-        const seats = ticket.maGhe || 'N/A';
-        const statusInfo = getStatusInfo(ticket.trangThai);
-        const ngayKhoiHanh = ticket.lichChay?.ngayKhoiHanh || ticket.ngayDi || extractDateFromMaLC(ticket.maLC) || 'N/A';
-        const gioKhoiHanh = ticket.lichChay?.gioKhoiHanh || ticket.lichChay?.thoiGianXuatBen || extractTimeFromMaLC(ticket.maLC) || 'N/A';
-        const giaVe = ticket.chuyenXe?.giaChuyenXe || ticket.giaVe || 0;
+    function getStatusInfo(status) {
+      const map = {
+        'paid': { text: 'Đã thanh toán', class: 'status-paid' },
+        'pending': { text: 'Chờ xử lý', class: 'status-pending' },
+        'cancelled': { text: 'Đã hủy', class: 'status-cancelled' },
+        'cancel_pending': { text: 'Chờ duyệt hủy', class: 'status-cancel-pending' },
+        'refunded': { text: 'Đã hoàn tiền', class: 'status-cancelled' }
+      };
+      return map[status] || { text: status, class: 'status-pending' };
+    }
 
-        const modalBody = document.getElementById('detailModalBody');
-        modalBody.innerHTML = `
+    function renderTickets(tickets) {
+      const el = document.getElementById('ticketsList');
+      if (!tickets || tickets.length === 0) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🎫</div>
+            <h3>Chưa có vé</h3>
+            <p>Bạn chưa mua vé nào. Hãy đặt vé ngay để trải nghiệm dịch vụ của chúng tôi!</p>
+          </div>
+        `;
+        return;
+      }
+
+      el.innerHTML = tickets.map(t => {
+        const statusInfo = getStatusInfo(t.trangThai);
+        const seats = t.maGhe || 'N/A';
+        // Lấy điểm đi/đến từ chuyenXe hoặc từ vé
+        const diemDi = t.chuyenXe?.diemDi || t.diemDi || 'N/A';
+        const diemDen = t.chuyenXe?.diemDen || t.diemDen || 'N/A';
+        const route = `${diemDi} - ${diemDen}`;
+        // Lấy ngày giờ khởi hành từ lichChay hoặc trích xuất từ maLC
+        const ngayKhoiHanh = t.lichChay?.ngayKhoiHanh || t.ngayDi || extractDateFromMaLC(t.maLC) || 'N/A';
+        const gioKhoiHanh = t.lichChay?.gioKhoiHanh || t.lichChay?.thoiGianXuatBen || extractTimeFromMaLC(t.maLC) || '';
+        const giaVe = t.chuyenXe?.giaChuyenXe || t.giaVe || 0;
+
+        // Determine if cancel button should be shown
+        const canCancel = t.trangThai === 'paid';
+        const isCancelPending = t.trangThai === 'cancel_pending';
+
+        return `
+          <div class="ticket-card">
+            <div class="ticket-status-badge ${statusInfo.class}">${statusInfo.text}</div>
+            <div class="ticket-header">
+              <div>
+                <div class="ticket-route">${route}</div>
+                <div class="ticket-meta">
+                  <span>🎫 Mã vé: <strong>${t.maVe}</strong></span>
+                  <span>💺 Ghế: <strong>${seats}</strong></span>
+                </div>
+              </div>
+            </div>
+            <div class="ticket-details">
+              <div class="detail-item">
+                <div class="detail-icon">📅</div>
+                <div class="detail-content">
+                  <div class="detail-label">Ngày giờ khởi hành</div>
+                  <div class="detail-value">${formatDateTime(ngayKhoiHanh, gioKhoiHanh)}</div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-icon">💰</div>
+                <div class="detail-content">
+                  <div class="detail-label">Giá vé</div>
+                  <div class="detail-value ticket-price">${formatCurrency(giaVe)}</div>
+                </div>
+              </div>
+            </div>
+            <div class="ticket-actions">
+              <button class="btn btn-details" onclick="viewTicketDetails('${t.maVe}')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Chi tiết
+              </button>
+              ${isCancelPending ?
+            '<button disabled class="btn btn-cancel" style="background: #9c27b0;">⏳ Đang chờ duyệt</button>' :
+            (canCancel ?
+              `<button class="btn btn-cancel" onclick="openCancelModal('${t.maVe}')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    Hủy vé
+                  </button>` :
+              `<button disabled class="btn btn-cancel">${statusInfo.text}</button>`
+            )
+          }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadTickets() {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      if (!token) {
+        Toast.warning('Vui lòng đăng nhập để xem vé');
+        setTimeout(() => window.location.href = 'login_register.html', 1500);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/bookings/my-bookings`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            Toast.warning('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+            setTimeout(() => window.location.href = 'login_register.html', 1500);
+            return;
+          }
+          throw new Error('Failed to load tickets');
+        }
+
+        const data = await res.json();
+        allTickets = data || [];
+
+        renderTickets(allTickets);
+      } catch (err) {
+        console.error(err);
+        Toast.error('Không thể tải vé. Vui lòng thử lại sau.');
+        renderTickets([]);
+      }
+    }
+
+    function viewTicketDetails(maVe) {
+      const ticket = allTickets.find(t => t.maVe === maVe);
+      if (!ticket) return;
+
+      const diemDi = ticket.chuyenXe?.diemDi || ticket.diemDi || 'N/A';
+      const diemDen = ticket.chuyenXe?.diemDen || ticket.diemDen || 'N/A';
+      const seats = ticket.maGhe || 'N/A';
+      const statusInfo = getStatusInfo(ticket.trangThai);
+      const ngayKhoiHanh = ticket.lichChay?.ngayKhoiHanh || ticket.ngayDi || extractDateFromMaLC(ticket.maLC) || 'N/A';
+      const gioKhoiHanh = ticket.lichChay?.gioKhoiHanh || ticket.lichChay?.thoiGianXuatBen || extractTimeFromMaLC(ticket.maLC) || 'N/A';
+      const giaVe = ticket.chuyenXe?.giaChuyenXe || ticket.giaVe || 0;
+
+      const modalBody = document.getElementById('detailModalBody');
+      modalBody.innerHTML = `
         <div class="ticket-detail-card">
           <div class="ticket-detail-header">
             <div class="ticket-detail-code">${maVe}</div>
@@ -1038,42 +1176,38 @@
           
           <div class="ticket-info-grid">
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">📅</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Ngày khởi hành</div>
                 <div class="ticket-info-value">${formatDateTime(ngayKhoiHanh, null)}</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">🕐</div>
+
+              </div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Giờ xuất bến</div>
                 <div class="ticket-info-value">${gioKhoiHanh}</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">💺</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Số ghế</div>
                 <div class="ticket-info-value">${seats}</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">🎫</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Số lượng vé</div>
                 <div class="ticket-info-value">1 vé</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">🚌</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Loại xe</div>
                 <div class="ticket-info-value">${ticket.chuyenXe?.loaiXe || 'Limousine'}</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">💰</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Giá vé</div>
                 <div class="ticket-info-value price">${formatCurrency(giaVe)}</div>
@@ -1084,7 +1218,7 @@
           ${ticket.ngayThanhToan ? `
           <div class="ticket-info-grid" style="margin-top: 16px;">
             <div class="ticket-info-item">
-              <div class="ticket-info-icon" style="background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);">✓</div>
+              style="background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);">✓</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Ngày thanh toán</div>
                 <div class="ticket-info-value">${formatDateTime(ticket.ngayThanhToan, null)}</div>
@@ -1101,34 +1235,34 @@
         </div>
       `;
 
-        document.getElementById('detailModal').classList.add('active');
-      }
+      document.getElementById('detailModal').classList.add('active');
+    }
 
     function closeDetailModal() {
-          document.getElementById('detailModal').classList.remove('active');
-        }
+      document.getElementById('detailModal').classList.remove('active');
+    }
 
     function printTicket() {
-          window.print();
-          Toast.info('Đang chuẩn bị in vé...');
-        }
+      window.print();
+      Toast.info('Đang chuẩn bị in vé...');
+    }
 
     function openCancelModal(maVe) {
-          const ticket = allTickets.find(t => t.maVe === maVe);
-          if (!ticket) return;
+      const ticket = allTickets.find(t => t.maVe === maVe);
+      if (!ticket) return;
 
-          currentCancelTicket = ticket;
+      currentCancelTicket = ticket;
 
-          const diemDi = ticket.chuyenXe?.diemDi || ticket.diemDi || 'N/A';
-          const diemDen = ticket.chuyenXe?.diemDen || ticket.diemDen || 'N/A';
-          const route = `${diemDi} - ${diemDen}`;
-          const seats = ticket.maGhe || 'N/A';
-          const ngayKhoiHanh = ticket.lichChay?.ngayKhoiHanh || ticket.ngayDi || extractDateFromMaLC(ticket.maLC) || 'N/A';
-          const gioKhoiHanh = ticket.lichChay?.gioKhoiHanh || extractTimeFromMaLC(ticket.maLC) || '';
-          const giaVe = ticket.chuyenXe?.giaChuyenXe || ticket.giaVe || 0;
+      const diemDi = ticket.chuyenXe?.diemDi || ticket.diemDi || 'N/A';
+      const diemDen = ticket.chuyenXe?.diemDen || ticket.diemDen || 'N/A';
+      const route = `${diemDi} - ${diemDen}`;
+      const seats = ticket.maGhe || 'N/A';
+      const ngayKhoiHanh = ticket.lichChay?.ngayKhoiHanh || ticket.ngayDi || extractDateFromMaLC(ticket.maLC) || 'N/A';
+      const gioKhoiHanh = ticket.lichChay?.gioKhoiHanh || extractTimeFromMaLC(ticket.maLC) || '';
+      const giaVe = ticket.chuyenXe?.giaChuyenXe || ticket.giaVe || 0;
 
-          // Show ticket info
-          document.getElementById('cancelTicketInfo').innerHTML = `
+      // Show ticket info
+      document.getElementById('cancelTicketInfo').innerHTML = `
         <h4>Thông tin vé</h4>
         <p><strong>Mã vé:</strong> ${ticket.maVe}</p>
         <p><strong>Tuyến:</strong> ${route}</p>
@@ -1137,145 +1271,145 @@
         <p><strong>Giá vé:</strong> ${formatCurrency(giaVe)}</p>
       `;
 
-          // Calculate refund estimate
-          calculateRefund(ticket);
+      // Calculate refund estimate
+      calculateRefund(ticket);
 
-          // Reset form
-          document.getElementById('cancelForm').reset();
-          document.getElementById('otherReasonGroup').style.display = 'none';
+      // Reset form
+      document.getElementById('cancelForm').reset();
+      document.getElementById('otherReasonGroup').style.display = 'none';
 
-          // Show modal
-          document.getElementById('cancelModal').classList.add('active');
-        }
+      // Show modal
+      document.getElementById('cancelModal').classList.add('active');
+    }
 
     function closeCancelModal() {
-          document.getElementById('cancelModal').classList.remove('active');
-          currentCancelTicket = null;
-        }
+      document.getElementById('cancelModal').classList.remove('active');
+      currentCancelTicket = null;
+    }
 
     function calculateRefund(ticket) {
-          const ngayKhoiHanh = ticket.lichChay?.ngayKhoiHanh || ticket.ngayDi || extractDateFromMaLC(ticket.maLC) || new Date().toISOString().split('T')[0];
-          const gioKhoiHanh = ticket.lichChay?.gioKhoiHanh || extractTimeFromMaLC(ticket.maLC) || '00:00';
-          const departureDate = new Date(`${ngayKhoiHanh}T${gioKhoiHanh}`);
-          const now = new Date();
-          const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
-          const giaVe = ticket.chuyenXe?.giaChuyenXe || ticket.giaVe || 0;
+      const ngayKhoiHanh = ticket.lichChay?.ngayKhoiHanh || ticket.ngayDi || extractDateFromMaLC(ticket.maLC) || new Date().toISOString().split('T')[0];
+      const gioKhoiHanh = ticket.lichChay?.gioKhoiHanh || extractTimeFromMaLC(ticket.maLC) || '00:00';
+      const departureDate = new Date(`${ngayKhoiHanh}T${gioKhoiHanh}`);
+      const now = new Date();
+      const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
+      const giaVe = ticket.chuyenXe?.giaChuyenXe || ticket.giaVe || 0;
 
-          let refundPercent = 0;
-          let message = '';
+      let refundPercent = 0;
+      let message = '';
 
-          if (hoursUntilDeparture >= 24) {
-            refundPercent = 80;
-            message = 'Hủy trước 24 giờ - Hoàn 80%';
-          } else if (hoursUntilDeparture >= 12) {
-            refundPercent = 50;
-            message = 'Hủy trước 12 giờ - Hoàn 50%';
-          } else if (hoursUntilDeparture >= 6) {
-            refundPercent = 30;
-            message = 'Hủy trước 6 giờ - Hoàn 30%';
-          } else if (hoursUntilDeparture > 0) {
-            refundPercent = 0;
-            message = 'Hủy dưới 6 giờ - Không hoàn tiền';
-          } else {
-            refundPercent = 0;
-            message = 'Chuyến xe đã khởi hành - Không thể hủy';
-          }
+      if (hoursUntilDeparture >= 24) {
+        refundPercent = 80;
+        message = 'Hủy trước 24 giờ - Hoàn 80%';
+      } else if (hoursUntilDeparture >= 12) {
+        refundPercent = 50;
+        message = 'Hủy trước 12 giờ - Hoàn 50%';
+      } else if (hoursUntilDeparture >= 6) {
+        refundPercent = 30;
+        message = 'Hủy trước 6 giờ - Hoàn 30%';
+      } else if (hoursUntilDeparture > 0) {
+        refundPercent = 0;
+        message = 'Hủy dưới 6 giờ - Không hoàn tiền';
+      } else {
+        refundPercent = 0;
+        message = 'Chuyến xe đã khởi hành - Không thể hủy';
+      }
 
-          const refundAmount = giaVe * refundPercent / 100;
+      const refundAmount = giaVe * refundPercent / 100;
 
-          document.getElementById('refundEstimate').innerHTML = `
+      document.getElementById('refundEstimate').innerHTML = `
         <h4>💵 Ước tính hoàn tiền</h4>
         <p>${formatCurrency(refundAmount)}</p>
         <div class="note">${message}</div>
         ${refundPercent === 0 && hoursUntilDeparture <= 0 ?
-              '<div style="color: #d32f2f; margin-top: 8px; font-weight: 500;">⚠️ Chuyến xe đã khởi hành, không thể hủy vé!</div>' : ''}
+          '<div style="color: #d32f2f; margin-top: 8px; font-weight: 500;">⚠️ Chuyến xe đã khởi hành, không thể hủy vé!</div>' : ''}
       `;
 
-          return { refundPercent, refundAmount, canCancel: hoursUntilDeparture > 0 };
-        }
+      return { refundPercent, refundAmount, canCancel: hoursUntilDeparture > 0 };
+    }
 
     // Show/hide other reason textarea
     document.getElementById('cancelReason').addEventListener('change', function () {
-          const otherGroup = document.getElementById('otherReasonGroup');
-          if (this.value === 'other') {
-            otherGroup.style.display = 'block';
-            document.getElementById('otherReason').required = true;
-          } else {
-            otherGroup.style.display = 'none';
-            document.getElementById('otherReason').required = false;
-          }
-        });
+      const otherGroup = document.getElementById('otherReasonGroup');
+      if (this.value === 'other') {
+        otherGroup.style.display = 'block';
+        document.getElementById('otherReason').required = true;
+      } else {
+        otherGroup.style.display = 'none';
+        document.getElementById('otherReason').required = false;
+      }
+    });
 
-      async function submitCancelRequest() {
-        if (!currentCancelTicket) return;
+    async function submitCancelRequest() {
+      if (!currentCancelTicket) return;
 
-        const reasonSelect = document.getElementById('cancelReason');
-        const otherReason = document.getElementById('otherReason').value.trim();
-        const note = document.getElementById('cancelNote').value.trim();
+      const reasonSelect = document.getElementById('cancelReason');
+      const otherReason = document.getElementById('otherReason').value.trim();
+      const note = document.getElementById('cancelNote').value.trim();
 
-        if (!reasonSelect.value) {
-          Toast.warning('Vui lòng chọn lý do hủy vé');
-          return;
-        }
-
-        if (reasonSelect.value === 'other' && !otherReason) {
-          Toast.warning('Vui lòng mô tả chi tiết lý do hủy vé');
-          return;
-        }
-
-        // Check if departure has passed
-        const refundInfo = calculateRefund(currentCancelTicket);
-        if (!refundInfo.canCancel) {
-          Toast.error('Chuyến xe đã khởi hành, không thể hủy vé!');
-          return;
-        }
-
-        const reasonLabels = {
-          'change_schedule': 'Thay đổi lịch trình cá nhân',
-          'health_issue': 'Vấn đề sức khỏe',
-          'duplicate_booking': 'Đặt vé trùng lặp',
-          'wrong_info': 'Nhập sai thông tin chuyến',
-          'emergency': 'Việc khẩn cấp',
-          'other': 'Lý do khác'
-        };
-
-        const cancelData = {
-          maDatVe: currentCancelTicket.maVe,
-          lyDoHuy: reasonSelect.value,
-          lyDoHuyText: reasonSelect.value === 'other' ? otherReason : reasonLabels[reasonSelect.value],
-          ghiChu: note,
-          tienHoanDuKien: refundInfo.refundAmount,
-          phanTramHoan: refundInfo.refundPercent
-        };
-
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-
-        try {
-          const res = await fetch(`${API_BASE_URL}/api/v1/bookings/cancel-request`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(cancelData)
-          });
-
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            throw new Error(body.detail || 'Không thể gửi yêu cầu hủy vé');
-          }
-
-          Toast.success('Yêu cầu hủy vé đã được gửi thành công! Vui lòng chờ admin duyệt.');
-          closeCancelModal();
-          setTimeout(loadTickets, 800);
-
-        } catch (err) {
-          console.error(err);
-          Toast.error(err.message || 'Gửi yêu cầu thất bại. Vui lòng thử lại sau.');
-        }
+      if (!reasonSelect.value) {
+        Toast.warning('Vui lòng chọn lý do hủy vé');
+        return;
       }
 
-      document.addEventListener('DOMContentLoaded', loadTickets);
+      if (reasonSelect.value === 'other' && !otherReason) {
+        Toast.warning('Vui lòng mô tả chi tiết lý do hủy vé');
+        return;
+      }
+
+      // Check if departure has passed
+      const refundInfo = calculateRefund(currentCancelTicket);
+      if (!refundInfo.canCancel) {
+        Toast.error('Chuyến xe đã khởi hành, không thể hủy vé!');
+        return;
+      }
+
+      const reasonLabels = {
+        'change_schedule': 'Thay đổi lịch trình cá nhân',
+        'health_issue': 'Vấn đề sức khỏe',
+        'duplicate_booking': 'Đặt vé trùng lặp',
+        'wrong_info': 'Nhập sai thông tin chuyến',
+        'emergency': 'Việc khẩn cấp',
+        'other': 'Lý do khác'
+      };
+
+      const cancelData = {
+        maDatVe: currentCancelTicket.maVe,
+        lyDoHuy: reasonSelect.value,
+        lyDoHuyText: reasonSelect.value === 'other' ? otherReason : reasonLabels[reasonSelect.value],
+        ghiChu: note,
+        tienHoanDuKien: refundInfo.refundAmount,
+        phanTramHoan: refundInfo.refundPercent
+      };
+
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/bookings/cancel-request`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(cancelData)
+        });
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.detail || 'Không thể gửi yêu cầu hủy vé');
+        }
+
+        Toast.success('Yêu cầu hủy vé đã được gửi thành công! Vui lòng chờ admin duyệt.');
+        closeCancelModal();
+        setTimeout(loadTickets, 800);
+
+      } catch (err) {
+        console.error(err);
+        Toast.error(err.message || 'Gửi yêu cầu thất bại. Vui lòng thử lại sau.');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadTickets);
   </script>
 </body>
 

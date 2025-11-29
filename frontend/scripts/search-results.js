@@ -42,25 +42,25 @@ function filterByTime() {
     // Get all checked time filters
     const timeCheckboxes = document.querySelectorAll('.time-option input[type="checkbox"]:checked');
     const selectedTimes = Array.from(timeCheckboxes).map(cb => cb.value);
-    
+
     // If no time filter selected, show all routes
     if (selectedTimes.length === 0) {
         displayResults(allRoutes);
         console.log('⏰ Không có bộ lọc thời gian, hiển thị tất cả');
         return;
     }
-    
+
     // Filter routes by time
     const timeFilteredRoutes = allRoutes.filter(route => {
         if (!route.thoiGianXuatBen) return false;
-        
+
         // Parse time (format: "HH:MM" or "HH:MM:SS")
         const timeParts = route.thoiGianXuatBen.split(':');
         const hour = parseInt(timeParts[0]);
-        
+
         // Check against selected time ranges
         return selectedTimes.some(timeRange => {
-            switch(timeRange) {
+            switch (timeRange) {
                 case 'early-morning': // 00:00 - 06:00
                     return hour >= 0 && hour < 6;
                 case 'morning': // 06:00 - 12:00
@@ -74,7 +74,7 @@ function filterByTime() {
             }
         });
     });
-    
+
     displayResults(timeFilteredRoutes);
     console.log(`⏰ Lọc theo thời gian: ${timeFilteredRoutes.length}/${allRoutes.length} tuyến`);
 }
@@ -99,7 +99,7 @@ async function searchRoutes(diemDi, diemDen, ngayDi, maTuyenXe = null) {
         }
 
         let routes = await response.json();
-        
+
         // If specific maTuyenXe provided, filter to show only that route
         if (maTuyenXe) {
             const specificRoute = routes.find(r => r.maTuyenXe === maTuyenXe);
@@ -108,7 +108,7 @@ async function searchRoutes(diemDi, diemDen, ngayDi, maTuyenXe = null) {
                 console.log('🎯 Đã chọn tuyến xe cụ thể:', maTuyenXe);
             }
         }
-        
+
         allRoutes = routes; // Store all routes
         filteredRoutes = routes;
         displayResults(routes);
@@ -258,12 +258,12 @@ async function selectRoute(route) {
         if (!response.ok) throw new Error('Failed to fetch route details');
 
         const routeDetails = await response.json();
-        
+
         // Store maLC from response for booking
         if (routeDetails.maLC) {
             currentRoute.maLC = routeDetails.maLC;
         }
-        
+
         openSeatModal(routeDetails);
 
     } catch (error) {
@@ -277,7 +277,7 @@ function openSeatModal(routeDetails) {
     const modal = document.getElementById('seatModal');
     const seatLayoutLower = document.getElementById('seatLayoutLower');
     const seatLayoutUpper = document.getElementById('seatLayoutUpper');
-    
+
     // Reset
     selectedSeats = [];
     seatLayoutLower.innerHTML = '';
@@ -289,11 +289,11 @@ function openSeatModal(routeDetails) {
     const arrivalTime = routeDetails.thoiGianDenDuKien || 'Chưa xác định';
     const duration = routeDetails.thoiGianQuangDuong || 'Chưa xác định';
     const loaiXe = (routeDetails.xe && routeDetails.xe.loaiXe) ? routeDetails.xe.loaiXe : 'Chưa có thông tin';
-    
+
     // Get held seats info from routeDetails
     const heldSeats = routeDetails.heldSeats || [];
     const myHeldSeats = routeDetails.myHeldSeats || [];
-    
+
     // Separate seats into lower and upper floors based on seat number
     // Sort seats by number for proper horizontal layout
     const allSeats = [...routeDetails.gheNgoi].sort((a, b) => {
@@ -301,14 +301,14 @@ function openSeatModal(routeDetails) {
         const numB = parseInt(getDisplaySeatCode(b.maGhe).replace(/[A-Z]/g, ''));
         return numA - numB;
     });
-    
+
     const lowerFloorSeats = [];
     const upperFloorSeats = [];
-    
+
     allSeats.forEach(seat => {
         const displayCode = getDisplaySeatCode(seat.maGhe);
         const seatNumber = parseInt(displayCode.replace(/[A-Z]/g, ''));
-        
+
         // A01-A17 = lower floor, A18-A34 = upper floor
         if (seatNumber >= 1 && seatNumber <= 17) {
             lowerFloorSeats.push(seat);
@@ -326,12 +326,12 @@ function openSeatModal(routeDetails) {
     lowerFloorSeats.forEach((seat, index) => {
         const displayCode = getDisplaySeatCode(seat.maGhe);
         const seatNumber = parseInt(displayCode.replace(/[A-Z]/g, ''));
-        
+
         // Add seat A01
         if (seatNumber === 1) {
             const seatDiv = createSeatElement(seat, heldSeats, myHeldSeats);
             seatLayoutLower.appendChild(seatDiv);
-            
+
             // Add empty space after A01 (driver area)
             const emptyDiv = document.createElement('div');
             emptyDiv.className = 'seat seat-empty';
@@ -346,12 +346,12 @@ function openSeatModal(routeDetails) {
     upperFloorSeats.forEach((seat, index) => {
         const displayCode = getDisplaySeatCode(seat.maGhe);
         const seatNumber = parseInt(displayCode.replace(/[A-Z]/g, ''));
-        
+
         // Add seat A18
         if (seatNumber === 18) {
             const seatDiv = createSeatElement(seat, heldSeats, myHeldSeats);
             seatLayoutUpper.appendChild(seatDiv);
-            
+
             // Add empty space after A18 (same as lower floor layout)
             const emptyDiv = document.createElement('div');
             emptyDiv.className = 'seat seat-empty';
@@ -371,11 +371,11 @@ function createSeatElement(seat, heldSeats = [], myHeldSeats = []) {
     const seatDiv = document.createElement('div');
     const maGhe = seat.maGhe;
     const displayCode = getDisplaySeatCode(maGhe);
-    
+
     // Determine seat status
     let seatClass = 'seat ';
     let isClickable = false;
-    
+
     if (!seat.trangThai) {
         // Ghế đã được đặt và thanh toán
         seatClass += 'booked';
@@ -391,7 +391,7 @@ function createSeatElement(seat, heldSeats = [], myHeldSeats = []) {
         seatClass += 'available';
         isClickable = true;
     }
-    
+
     seatDiv.className = seatClass;
     seatDiv.textContent = displayCode;
     seatDiv.dataset.seatId = maGhe;
@@ -413,7 +413,7 @@ function closeSeatModal() {
 // Toggle seat selection
 function toggleSeat(seatId) {
     const seatDiv = document.querySelector(`[data-seat-id="${seatId}"]`);
-    
+
     if (selectedSeats.includes(seatId)) {
         // Deselect
         selectedSeats = selectedSeats.filter(s => s !== seatId);
@@ -506,7 +506,7 @@ async function confirmBooking() {
 
         const booking = await response.json();
         console.log('Booking created:', booking);
-        
+
         // Close seat modal and show payment QR modal
         closeSeatModal();
         showPaymentModal(booking);
@@ -520,11 +520,11 @@ async function confirmBooking() {
 // Show payment modal with QR code and countdown timer
 async function showPaymentModal(booking) {
     console.log('showPaymentModal called with:', booking);
-    
+
     // Get user info
     const token = localStorage.getItem('access_token');
     let userInfo = { hoTen: '', email: '', soDienThoai: '' };
-    
+
     try {
         const response = await fetch(`${API_URL}/auth/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -538,21 +538,21 @@ async function showPaymentModal(booking) {
 
     const modal = document.getElementById('ticketInfoModal');
     const ticketInfo = document.getElementById('ticketInfoContent');
-    
+
     if (!modal || !ticketInfo) {
         console.error('Modal elements not found!');
         return;
     }
-    
+
     console.log('Modal elements found, rendering...');
-    
+
     const departTime = currentRoute.thoiGianXuatBen || 'Chưa xác định';
     const arrivalTime = currentRoute.thoiGianDenDuKien || 'Chưa xác định';
-    
+
     // Normalize field names: backend uses maHD, danhSachGhe
     const maHD = booking.maHD || booking.maDatVe;
     const danhSachGhe = booking.danhSachGhe || booking.soGheNgoi || selectedSeats;
-    
+
     ticketInfo.innerHTML = `
         <div class="ticket-header">
             <h3>THANH TOÁN BẰNG QR CODE</h3>
@@ -568,10 +568,10 @@ async function showPaymentModal(booking) {
             <div class="ticket-section qr-section">
                 <h4>Quét mã QR để thanh toán</h4>
                 <div class="qr-code-container">
-                    ${booking.qrCode 
-                        ? `<img src="${booking.qrCode}" alt="QR Payment" class="qr-code-image" onerror="this.onerror=null; this.src=''; this.alt='Không thể tải QR code';" />` 
-                        : '<p style="color: red;">❌ Không thể tạo QR code. Vui lòng thử lại.</p>'
-                    }
+                    ${booking.qrCode
+            ? `<img src="${booking.qrCode}" alt="QR Payment" class="qr-code-image" onerror="this.onerror=null; this.src=''; this.alt='Không thể tải QR code';" />`
+            : '<p style="color: red;">❌ Không thể tạo QR code. Vui lòng thử lại.</p>'
+        }
                 </div>
                 <p class="qr-instruction">
                     📱 Mở ứng dụng Ngân hàng → Quét QR → Thanh toán
@@ -624,7 +624,7 @@ async function showPaymentModal(booking) {
     `;
 
     modal.classList.add('active');
-    
+
     // Start countdown timer (10 minutes = 600 seconds)
     startCountdown(600, maHD);
 }
@@ -633,19 +633,19 @@ async function showPaymentModal(booking) {
 function startCountdown(seconds, maDatVe) {
     let remaining = seconds;
     const timerDisplay = document.getElementById('timerDisplay');
-    
+
     const interval = setInterval(() => {
         remaining--;
-        
+
         const minutes = Math.floor(remaining / 60);
         const secs = remaining % 60;
         timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        
+
         // Change color when less than 1 minute
         if (remaining < 60) {
             timerDisplay.style.color = 'red';
         }
-        
+
         // Time's up
         if (remaining <= 0) {
             clearInterval(interval);
@@ -654,7 +654,7 @@ function startCountdown(seconds, maDatVe) {
             window.location.reload(); // Reload to refresh seat availability
         }
     }, 1000);
-    
+
     // Store interval ID to clear when user confirms/cancels
     window.currentBookingTimer = interval;
 }
@@ -685,14 +685,14 @@ async function confirmPayment(maHD) {
         }
 
         const result = await response.json();
-        
+
         // Clear countdown timer
         if (window.currentBookingTimer) {
             clearInterval(window.currentBookingTimer);
         }
-        
+
         Toast.success(`✅ Thanh toán thành công!\n\nMã đặt vé: ${result.maHD}\nTổng tiền: ${formatPrice(result.tongTien)}\n\nCảm ơn quý khách!`, 'Thanh toán thành công');
-        
+
         closeTicketInfoModal();
         setTimeout(() => {
             window.location.href = 'index.html';
@@ -724,7 +724,7 @@ async function cancelPayment(maHD) {
         'Xác nhận hủy vé',
         'warning'
     );
-    
+
     // Restore payment modal if user cancels
     if (!confirmed) {
         if (wasActive) {
@@ -758,9 +758,9 @@ async function cancelPayment(maHD) {
         if (window.currentBookingTimer) {
             clearInterval(window.currentBookingTimer);
         }
-        
+
         Toast.info('❌ Đã hủy đặt vé. Ghế đã được giải phóng.', 'Hủy thành công');
-        
+
         closeTicketInfoModal();
         setTimeout(() => {
             window.location.reload(); // Reload to refresh seat availability
@@ -779,7 +779,7 @@ function closeTicketInfoModal() {
         clearInterval(window.currentBookingTimer);
         window.currentBookingTimer = null;
     }
-    
+
     const modal = document.getElementById('ticketInfoModal');
     modal.classList.remove('active');
 }

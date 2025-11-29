@@ -21,6 +21,7 @@ from app.models.entities import (
     GheNgoiWithStatus
 )
 from app.services.redis_service import redis_service
+from app.utils import get_current_time_hcm
 import json
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
@@ -145,6 +146,11 @@ async def search_routes(search: RouteSearchRequest):
             ngay_di = datetime.strptime(search.ngayDi, "%Y-%m-%d")
         except ValueError:
             raise HTTPException(status_code=400, detail="Ngày đi không hợp lệ. Định dạng: YYYY-MM-DD")
+        
+        # Validate ngày đi không được trong quá khứ
+        today = get_current_time_hcm().date()
+        if ngay_di.date() < today:
+            raise HTTPException(status_code=400, detail="Ngày đi không được trong quá khứ")
         
         # Check cache first
         cache_key = f"search:{search.diemDi}:{search.diemDen}:{search.ngayDi}:{search.limit}"

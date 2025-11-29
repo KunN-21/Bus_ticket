@@ -10,6 +10,7 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict
 from app.core.database import redis_client
+from app.utils import get_current_time_hcm, format_datetime_hcm
 
 
 class SeatHoldingService:
@@ -75,7 +76,7 @@ class SeatHoldingService:
             }
         
         # Tạo booking pending
-        expire_at = (datetime.utcnow() + timedelta(seconds=SeatHoldingService.HOLD_DURATION)).isoformat()
+        expire_at = (get_current_time_hcm() + timedelta(seconds=SeatHoldingService.HOLD_DURATION)).isoformat()
         booking_info = {
             "maDatVe": ma_dat_ve,
             "maTuyen": ma_tuyen,
@@ -84,7 +85,7 @@ class SeatHoldingService:
             "seats": seats,
             "customer_id": customer_id,
             "amount": amount,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": format_datetime_hcm(),
             "expire_at": expire_at
         }
         

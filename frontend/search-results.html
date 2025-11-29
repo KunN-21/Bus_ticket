@@ -465,6 +465,12 @@
             border: 2px solid #BDBDBD;
         }
 
+        .legend-box.held {
+            background: #FFE0B2;
+            color: #E65100;
+            border: 2px solid #FFB74D;
+        }
+
         .legend-text {
             font-size: 14px;
             color: #333;
@@ -486,15 +492,15 @@
         }
 
         .floors-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         .seat-layout {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
             padding: 15px;
             background: white;
             border-radius: 12px;
@@ -503,15 +509,15 @@
         }
 
         .seat {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             aspect-ratio: 1;
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 500;
-            font-size: 15px;
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
@@ -570,6 +576,35 @@
 
         .seat.booked::before {
             background: #BDBDBD;
+        }
+
+        /* Ghế đang được giữ bởi người khác */
+        .seat.held {
+            background: #FFE0B2;
+            color: #E65100;
+            cursor: not-allowed;
+            border: 2px solid #FFB74D;
+        }
+
+        .seat.held::before {
+            background: #FFB74D;
+        }
+
+        /* Ghế tôi đang giữ (pending payment) */
+        .seat.my-held {
+            background: #FFF3E0;
+            color: #FF6600;
+            border: 2px solid #FF9800;
+            cursor: pointer;
+        }
+
+        .seat.my-held::before {
+            background: #FFB74D;
+        }
+
+        .seat.my-held:hover {
+            background: #FFE0B2;
+            transform: scale(1.05);
         }
 
         .booking-summary {
@@ -1143,6 +1178,10 @@
                 <div class="legend-item">
                     <div class="legend-box selected"></div>
                     <span class="legend-text">Đang chọn</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box held"></div>
+                    <span class="legend-text">Đang giữ</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-box booked"></div>

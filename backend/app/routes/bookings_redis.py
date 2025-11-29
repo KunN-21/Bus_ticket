@@ -99,7 +99,7 @@ def get_pending_key(maLC: str, ngayDi: str) -> str:
 
 # ========== SEAT HOLDING (Redis TTL) ==========
 
-HOLD_DURATION = 180  # 3 minutes
+HOLD_DURATION = 600  # 10 minutes
 
 
 async def get_pending_bookings(maLC: str, ngayDi: str) -> dict:

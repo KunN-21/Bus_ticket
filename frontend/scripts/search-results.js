@@ -9,6 +9,16 @@ let searchDate = null;
 let allRoutes = []; // Store all routes for filtering
 let filteredRoutes = []; // Store filtered routes
 
+// Helper function to extract display seat code from full maGhe (e.g., "XE001_A15" -> "A15")
+function getDisplaySeatCode(maGhe) {
+    if (!maGhe) return '';
+    // If contains underscore, get the part after it
+    if (maGhe.includes('_')) {
+        return maGhe.split('_').pop();
+    }
+    return maGhe;
+}
+
 // Load search results on page load
 document.addEventListener('DOMContentLoaded', async () => {
     // Get search params from URL
@@ -267,15 +277,24 @@ function openSeatModal(routeDetails) {
     const duration = routeDetails.thoiGianQuangDuong || 'Chưa xác định';
     const loaiXe = (routeDetails.xe && routeDetails.xe.loaiXe) ? routeDetails.xe.loaiXe : 'Chưa có thông tin';
     
+    // Get held seats info from routeDetails
+    const heldSeats = routeDetails.heldSeats || [];
+    const myHeldSeats = routeDetails.myHeldSeats || [];
+    
     // Separate seats into lower and upper floors based on seat number
+    // Sort seats by number for proper horizontal layout
+    const allSeats = [...routeDetails.gheNgoi].sort((a, b) => {
+        const numA = parseInt(getDisplaySeatCode(a.maGhe).replace(/[A-Z]/g, ''));
+        const numB = parseInt(getDisplaySeatCode(b.maGhe).replace(/[A-Z]/g, ''));
+        return numA - numB;
+    });
+    
     const lowerFloorSeats = [];
     const upperFloorSeats = [];
     
-    routeDetails.gheNgoi.forEach(seat => {
-        const seatCode = seat.maGhe;
-        
-        // Extract number from seat code (e.g., A01 -> 1, A17 -> 17)
-        const seatNumber = parseInt(seatCode.replace(/[A-Z]/g, ''));
+    allSeats.forEach(seat => {
+        const displayCode = getDisplaySeatCode(seat.maGhe);
+        const seatNumber = parseInt(displayCode.replace(/[A-Z]/g, ''));
         
         // A01-A17 = lower floor, A18-A34 = upper floor
         if (seatNumber >= 1 && seatNumber <= 17) {
@@ -283,59 +302,49 @@ function openSeatModal(routeDetails) {
         } else if (seatNumber >= 18 && seatNumber <= 34) {
             upperFloorSeats.push(seat);
         } else {
-            // Default to lower floor if doesn't match pattern
             lowerFloorSeats.push(seat);
         }
     });
 
-    // Render lower floor seats with spacing for first row
+    // Render lower floor seats in horizontal rows (6 columns)
+    // Row 1: A01, [empty], A02 | A03, A04, A05
+    // Row 2: A06, A07, A08 | A09, A10, A11
+    // ...
     lowerFloorSeats.forEach((seat, index) => {
-        const seatNumber = parseInt(seat.maGhe.replace(/[A-Z]/g, ''));
+        const displayCode = getDisplaySeatCode(seat.maGhe);
+        const seatNumber = parseInt(displayCode.replace(/[A-Z]/g, ''));
         
         // Add seat A01
         if (seatNumber === 1) {
-            const seatDiv = createSeatElement(seat);
+            const seatDiv = createSeatElement(seat, heldSeats, myHeldSeats);
             seatLayoutLower.appendChild(seatDiv);
             
-            // Add empty space
+            // Add empty space after A01 (driver area)
             const emptyDiv = document.createElement('div');
             emptyDiv.className = 'seat seat-empty';
             seatLayoutLower.appendChild(emptyDiv);
-        }
-        // Add seat A02 (skip A01 since already added)
-        else if (seatNumber === 2) {
-            const seatDiv = createSeatElement(seat);
-            seatLayoutLower.appendChild(seatDiv);
-        }
-        // Normal seats A03-A17
-        else if (seatNumber >= 3 && seatNumber <= 17) {
-            const seatDiv = createSeatElement(seat);
+        } else {
+            const seatDiv = createSeatElement(seat, heldSeats, myHeldSeats);
             seatLayoutLower.appendChild(seatDiv);
         }
     });
 
-    // Render upper floor seats with spacing for first row (same layout as lower floor)
+    // Render upper floor seats (A18-A34)
     upperFloorSeats.forEach((seat, index) => {
-        const seatNumber = parseInt(seat.maGhe.replace(/[A-Z]/g, ''));
+        const displayCode = getDisplaySeatCode(seat.maGhe);
+        const seatNumber = parseInt(displayCode.replace(/[A-Z]/g, ''));
         
         // Add seat A18
         if (seatNumber === 18) {
-            const seatDiv = createSeatElement(seat);
+            const seatDiv = createSeatElement(seat, heldSeats, myHeldSeats);
             seatLayoutUpper.appendChild(seatDiv);
             
-            // Add empty space between A18 and A19 (same as A01 and A02)
+            // Add empty space after A18 (same as lower floor layout)
             const emptyDiv = document.createElement('div');
             emptyDiv.className = 'seat seat-empty';
             seatLayoutUpper.appendChild(emptyDiv);
-        }
-        // Add seat A19
-        else if (seatNumber === 19) {
-            const seatDiv = createSeatElement(seat);
-            seatLayoutUpper.appendChild(seatDiv);
-        }
-        // Normal seats A20-A34
-        else if (seatNumber >= 20 && seatNumber <= 34) {
-            const seatDiv = createSeatElement(seat);
+        } else {
+            const seatDiv = createSeatElement(seat, heldSeats, myHeldSeats);
             seatLayoutUpper.appendChild(seatDiv);
         }
     });
@@ -345,16 +354,37 @@ function openSeatModal(routeDetails) {
 }
 
 // Create seat element
-function createSeatElement(seat) {
+function createSeatElement(seat, heldSeats = [], myHeldSeats = []) {
     const seatDiv = document.createElement('div');
-    // trangThai: true = còn trống, false = đã đặt
-    seatDiv.className = `seat ${seat.trangThai ? 'available' : 'booked'}`;
-    seatDiv.textContent = seat.maGhe;
-    seatDiv.dataset.seatId = seat.maGhe;
+    const maGhe = seat.maGhe;
+    const displayCode = getDisplaySeatCode(maGhe);
+    
+    // Determine seat status
+    let seatClass = 'seat ';
+    let isClickable = false;
+    
+    if (!seat.trangThai) {
+        // Ghế đã được đặt và thanh toán
+        seatClass += 'booked';
+    } else if (myHeldSeats.includes(maGhe)) {
+        // Ghế tôi đang giữ (có thể chọn lại)
+        seatClass += 'my-held';
+        isClickable = true;
+    } else if (heldSeats.includes(maGhe)) {
+        // Ghế đang được người khác giữ
+        seatClass += 'held';
+    } else {
+        // Ghế còn trống
+        seatClass += 'available';
+        isClickable = true;
+    }
+    
+    seatDiv.className = seatClass;
+    seatDiv.textContent = displayCode;
+    seatDiv.dataset.seatId = maGhe;
 
-    // Chỉ cho phép click nếu ghế còn trống (trangThai = true)
-    if (seat.trangThai) {
-        seatDiv.onclick = () => toggleSeat(seat.maGhe);
+    if (isClickable) {
+        seatDiv.onclick = () => toggleSeat(maGhe);
     }
 
     return seatDiv;
@@ -394,7 +424,9 @@ function updateBookingSummary() {
     const confirmBtn = document.getElementById('btnConfirmBooking');
 
     if (selectedSeats.length > 0) {
-        selectedSeatsSpan.textContent = selectedSeats.join(', ');
+        // Display only seat codes (A15) instead of full maGhe (XE001_A15)
+        const displaySeats = selectedSeats.map(s => getDisplaySeatCode(s));
+        selectedSeatsSpan.textContent = displaySeats.join(', ');
         seatCountSpan.textContent = selectedSeats.length;
         totalPriceSpan.textContent = formatPrice(ticketPrice * selectedSeats.length);
         confirmBtn.disabled = false;
@@ -430,10 +462,9 @@ async function confirmBooking() {
     }
 
     console.log('Booking data:', {
-        maTuyen: currentRoute.maTuyenXe,
+        maLC: currentRoute.maLC,
         ngayDi: searchDate,
-        gioDi: currentRoute.thoiGianXuatBen,
-        gheNgoi: selectedSeats,
+        danhSachGhe: selectedSeats,
         tongTien: ticketPrice * selectedSeats.length,
         sessionId: sessionId
     });
@@ -447,10 +478,9 @@ async function confirmBooking() {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                maTuyen: currentRoute.maTuyenXe,
+                maLC: currentRoute.maLC,
                 ngayDi: searchDate,
-                gioDi: currentRoute.thoiGianXuatBen,
-                soGheNgoi: selectedSeats,  // Fix: gheNgoi → soGheNgoi
+                danhSachGhe: selectedSeats,
                 sessionId: sessionId
             })
         });
@@ -506,10 +536,14 @@ async function showPaymentModal(booking) {
     const departTime = currentRoute.thoiGianXuatBen || 'Chưa xác định';
     const arrivalTime = currentRoute.thoiGianDenDuKien || 'Chưa xác định';
     
+    // Normalize field names: backend uses maHD, danhSachGhe
+    const maHD = booking.maHD || booking.maDatVe;
+    const danhSachGhe = booking.danhSachGhe || booking.soGheNgoi || selectedSeats;
+    
     ticketInfo.innerHTML = `
         <div class="ticket-header">
             <h3>THANH TOÁN BẰNG QR CODE</h3>
-            <p class="ticket-code">Mã đặt vé: <strong>${booking.maDatVe}</strong></p>
+            <p class="ticket-code">Mã đặt vé: <strong>${maHD}</strong></p>
             <div class="countdown-timer" id="countdownTimer">
                 <span>⏱️ Thời gian còn lại: </span>
                 <strong id="timerDisplay">03:00</strong>
@@ -535,7 +569,7 @@ async function showPaymentModal(booking) {
                     <p><strong>Chủ tài khoản:</strong> VU KHANH NAM</p>
                     <p><strong>Số tiền:</strong> ${formatPrice(booking.tongTien)}</p>
                     <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                        💡 Nội dung CK: <strong>VOOBUS ${booking.maDatVe}</strong>
+                        💡 Nội dung CK: <strong>VOOBUS ${maHD}</strong>
                     </p>
                 </div>
             </div>
@@ -557,7 +591,7 @@ async function showPaymentModal(booking) {
                 </div>
                 <div class="ticket-row">
                     <span class="label">Ghế ngồi:</span>
-                    <span class="value highlight">${booking.soGheNgoi.join(', ')}</span>
+                    <span class="value highlight">${Array.isArray(danhSachGhe) ? danhSachGhe.map(s => getDisplaySeatCode(s)).join(', ') : getDisplaySeatCode(danhSachGhe)}</span>
                 </div>
                 <div class="ticket-row total">
                     <span class="label">Tổng tiền:</span>
@@ -567,10 +601,10 @@ async function showPaymentModal(booking) {
         </div>
 
         <div class="ticket-footer">
-            <button class="btn-payment" onclick="confirmPayment('${booking.maDatVe}')">
+            <button class="btn-payment" onclick="confirmPayment('${maHD}')">
                 ✅ Đã thanh toán
             </button>
-            <button class="btn-cancel" onclick="cancelPayment('${booking.maDatVe}')">
+            <button class="btn-cancel" onclick="cancelPayment('${maHD}')">
                 ❌ Hủy đặt vé
             </button>
         </div>
@@ -579,7 +613,7 @@ async function showPaymentModal(booking) {
     modal.classList.add('active');
     
     // Start countdown timer (3 minutes = 180 seconds)
-    startCountdown(180, booking.maDatVe);
+    startCountdown(180, maHD);
 }
 
 // Countdown timer
@@ -612,8 +646,8 @@ function startCountdown(seconds, maDatVe) {
     window.currentBookingTimer = interval;
 }
 
-// Confirm payment - Save to MongoDB
-async function confirmPayment(maDatVe) {
+// Confirm payment - Save to Redis
+async function confirmPayment(maHD) {
     const token = localStorage.getItem('access_token');
     if (!token) {
         Toast.warning('Vui lòng đăng nhập!', 'Yêu cầu đăng nhập');
@@ -628,7 +662,7 @@ async function confirmPayment(maDatVe) {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                maDatVe: maDatVe
+                maHD: maHD
             })
         });
 
@@ -644,7 +678,7 @@ async function confirmPayment(maDatVe) {
             clearInterval(window.currentBookingTimer);
         }
         
-        Toast.success(`✅ Thanh toán thành công!\n\nMã đặt vé: ${result.maDatVe}\nTổng tiền: ${formatPrice(result.tongTien)}\n\nCảm ơn quý khách!`, 'Thanh toán thành công');
+        Toast.success(`✅ Thanh toán thành công!\n\nMã đặt vé: ${result.maHD}\nTổng tiền: ${formatPrice(result.tongTien)}\n\nCảm ơn quý khách!`, 'Thanh toán thành công');
         
         closeTicketInfoModal();
         setTimeout(() => {
@@ -658,7 +692,7 @@ async function confirmPayment(maDatVe) {
 }
 
 // Cancel payment - Release seats from Redis
-async function cancelPayment(maDatVe) {
+async function cancelPayment(maHD) {
     const token = localStorage.getItem('access_token');
     if (!token) {
         Toast.warning('Vui lòng đăng nhập!', 'Yêu cầu đăng nhập');
@@ -694,7 +728,7 @@ async function cancelPayment(maDatVe) {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                maDatVe: maDatVe
+                maHD: maHD
             })
         });
 

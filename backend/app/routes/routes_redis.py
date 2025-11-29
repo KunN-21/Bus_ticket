@@ -111,6 +111,24 @@ async def get_all_schedules():
         raise HTTPException(status_code=500, detail=f"Lỗi lấy lịch chạy: {str(e)}")
 
 
+@router.get("/schedules/{maLC}")
+async def get_schedule_by_id(maLC: str):
+    """
+    Lấy thông tin lịch chạy theo mã lịch chạy
+    """
+    try:
+        schedule = await redis_service.get_lich_chay(maLC)
+        
+        if not schedule:
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy lịch chạy: {maLC}")
+        
+        return schedule
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy lịch chạy: {str(e)}")
+
+
 @router.post("/search", response_model=List[RouteSearchResponse])
 async def search_routes(search: RouteSearchRequest):
     """

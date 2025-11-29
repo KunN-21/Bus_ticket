@@ -83,7 +83,22 @@ class PaymentCancelRequest(BaseModel):
     sessionId: Optional[str] = None
 
 
-# ========== HELPER FUNCTIONS ==========
+class CancelRequest(BaseModel):
+    """Request yêu cầu hủy vé"""
+    maDatVe: str
+    lyDoHuy: str  # Mã lý do: change_schedule, health_issue, etc.
+    lyDoHuyText: str  # Lý do chi tiết
+    ghiChu: Optional[str] = None
+    tienHoanDuKien: float
+    phanTramHoan: int
+
+
+class CancelRequestResponse(BaseModel):
+    """Response sau khi gửi yêu cầu hủy"""
+    maYeuCauHuy: str
+    maDatVe: str
+    trangThai: str  # "pending" | "approved" | "rejected"
+    message: str
 
 def generate_id(prefix: str) -> str:
     """Tạo mã ID unique"""
@@ -503,3 +518,77 @@ async def get_my_invoices(current_user: dict = Depends(get_current_customer)):
     hoa_don_list = await redis_service.get_hoa_don_by_khach_hang(maKH)
     
     return hoa_don_list
+
+
+@router.post("/cancel-request", response_model=CancelRequestResponse)
+async def create_cancel_request(request: CancelRequest, current_user: dict = Depends(get_current_customer)):
+    """
+    Tạo yêu cầu hủy vé - sẽ được admin duyệt
+    
+    Workflow:
+    1. Kiểm tra vé tồn tại và thuộc về user
+    2. Kiểm tra vé chưa bị hủy
+    3. Tạo yêu cầu hủy trong Redis với key yeuCauHuy:{maYeuCauHuy}
+    4. Cập nhật trạng thái vé thành "cancel_pending"
+    """
+    maKH = current_user.get("maKH")
+    
+    # Kiểm tra vé tồn tại
+    ve = await redis_service.get_ve_xe(request.maDatVe)
+    if not ve:
+        raise HTTPException(status_code=404, detail="Không tìm thấy vé")
+    
+    # Kiểm tra quyền sở hữu
+    if ve.get("maKH") != maKH:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền hủy vé này")
+    
+    # Kiểm tra trạng thái vé
+    current_status = ve.get("trangThai")
+    if current_status == "cancelled":
+        raise HTTPException(status_code=400, detail="Vé đã được hủy trước đó")
+    if current_status == "cancel_pending":
+        raise HTTPException(status_code=400, detail="Yêu cầu hủy vé đang chờ xử lý")
+    if current_status == "refunded":
+        raise HTTPException(status_code=400, detail="Vé đã được hoàn tiền")
+    
+    # Tạo mã yêu cầu hủy
+    ma_yeu_cau = generate_id("HV")
+    
+    # Tạo document yêu cầu hủy
+    cancel_doc = {
+        "maYeuCauHuy": ma_yeu_cau,
+        "maDatVe": request.maDatVe,
+        "maKH": maKH,
+        "tenKH": current_user.get("hoTen", ""),
+        "emailKH": current_user.get("email", ""),
+        "maTuyenXe": ve.get("maTuyenXe"),
+        "ngayDi": ve.get("ngayDi"),
+        "gioDi": ve.get("gioDi"),
+        "soGheNgoi": ve.get("soGheNgoi"),
+        "tongTien": ve.get("tongTien"),
+        "lyDoHuy": request.lyDoHuy,
+        "lyDoHuyText": request.lyDoHuyText,
+        "ghiChu": request.ghiChu,
+        "tienHoanDuKien": request.tienHoanDuKien,
+        "phanTramHoan": request.phanTramHoan,
+        "trangThai": "pending",
+        "ngayTao": datetime.now().isoformat(),
+        "ngayCapNhat": datetime.now().isoformat()
+    }
+    
+    # Lưu vào Redis
+    await redis_service.create("yeuCauHuy", "maYeuCauHuy", cancel_doc)
+    
+    # Cập nhật trạng thái vé
+    update_data = {
+        "trangThai": "cancel_pending",
+        "ngayCapNhat": datetime.now().isoformat()
+    }
+    await redis_service.update_ve_xe(request.maDatVe, update_data)
+    
+    return CancelRequestResponse(
+        maYeuCauHuy=ma_yeu_cau,
+        maDatVe=request.maDatVe,
+        trangThai="pending",
+        message="Yêu cầu hủy vé đã được gửi thành công"
+    )

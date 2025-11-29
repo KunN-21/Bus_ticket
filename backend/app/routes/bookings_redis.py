@@ -63,6 +63,7 @@ class BookingCreateResponse(BaseModel):
     """Response sau khi tạo booking"""
     maHD: str
     danhSachVe: List[str]
+    danhSachGhe: List[str] = []  # Danh sách ghế đã đặt
     tongTien: float
     trangThai: str
     ngayDat: str
@@ -338,6 +339,7 @@ async def create_booking(request: BookingCreateRequest, current_user: dict = Dep
     return BookingCreateResponse(
         maHD=maHD,
         danhSachVe=danhSachVe,
+        danhSachGhe=request.danhSachGhe,
         tongTien=tong_tien,
         trangThai="pending",
         ngayDat=datetime.utcnow().isoformat(),
@@ -369,6 +371,7 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
         return BookingCreateResponse(
             maHD=existing.get("maHD"),
             danhSachVe=existing.get("danhSachVe", []),
+            danhSachGhe=[],  # Không có thông tin ghế trong hóa đơn đã lưu
             tongTien=existing.get("tongTien", 0),
             trangThai="paid",
             ngayDat=existing.get("ngayLap", "")
@@ -422,6 +425,7 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
     return BookingCreateResponse(
         maHD=booking_info["maHD"],
         danhSachVe=booking_info["danhSachVe"],
+        danhSachGhe=booking_info.get("danhSachGhe", []),
         tongTien=booking_info["tongTien"],
         trangThai="paid",
         ngayDat=now.isoformat()

@@ -46,10 +46,12 @@ class RedisService:
         return json.dumps(data, default=convert, ensure_ascii=False)
     
     @staticmethod
-    def _deserialize(data: str) -> dict:
-        """Deserialize JSON string to dict"""
+    def _deserialize(data) -> dict:
+        """Deserialize JSON string/bytes to dict"""
         if not data:
             return None
+        if isinstance(data, bytes):
+            data = data.decode('utf-8')
         return json.loads(data)
     
     # ==================== GENERIC CRUD ====================
@@ -117,14 +119,47 @@ class RedisService:
         if not keys:
             return []
         
-        result = []
+        # Use pipeline for batch get
+        pipeline = redis.pipeline()
         for key_value in keys:
             redis_key = f"{collection}:{key_value}"
-            data = await redis.get(redis_key)
+            pipeline.get(redis_key)
+        
+        results = await pipeline.execute()
+        
+        result = []
+        for data in results:
             if data:
                 result.append(RedisService._deserialize(data))
         
         return result
+    
+    @staticmethod
+    async def get_multiple(collection: str, key_values: List[str]) -> List[Optional[dict]]:
+        """
+        Lấy nhiều documents cùng lúc
+        
+        Args:
+            collection: Tên collection
+            key_values: List giá trị key
+        
+        Returns:
+            List of documents (None nếu không tìm thấy)
+        """
+        if not key_values:
+            return []
+        
+        redis = await RedisService._get_client()
+        
+        # Use pipeline
+        pipeline = redis.pipeline()
+        for key_value in key_values:
+            redis_key = f"{collection}:{key_value}"
+            pipeline.get(redis_key)
+        
+        results = await pipeline.execute()
+        
+        return [RedisService._deserialize(data) if data else None for data in results]
     
     @staticmethod
     async def find(collection: str, query: dict) -> List[dict]:
@@ -322,8 +357,60 @@ class RedisService:
         return await RedisService.get_all("chuyenXe")
     
     @staticmethod
+    async def build_indexes():
+        """
+        Xây dựng các index để tăng tốc độ truy vấn
+        """
+        redis = await RedisService._get_client()
+        
+        # Index cho routes: routes:{diemDi}:{diemDen} -> set of maCX
+        routes = await RedisService.get_all("chuyenXe")
+        for route in routes:
+            diem_di = route.get("diemDi", "")
+            diem_den = route.get("diemDen", "")
+            ma_cx = route.get("maCX", "")
+            if diem_di and diem_den and ma_cx:
+                await redis.sadd(f"routes:{diem_di}:{diem_den}", ma_cx)
+        
+        # Index cho booked seats: booked:{maLC} -> set of maGhe (populate from existing veXe)
+        ve_list = await RedisService.get_all("veXe")
+        for ve in ve_list:
+            if ve.get("trangThai") in ["paid", "confirmed"]:
+                ma_lc = ve.get("maLC", "")
+                if ma_lc:
+                    booked_key = f"booked:{ma_lc}"
+                    if ve.get("maGhe"):
+                        await redis.sadd(booked_key, ve.get("maGhe"))
+                    elif ve.get("soGhe"):
+                        for ghe in ve.get("soGhe", []):
+                            await redis.sadd(booked_key, ghe)
+    
+    @staticmethod
+    async def search_chuyen_xe_indexed(diemDi: str, diemDen: str) -> List[dict]:
+        """Tìm chuyến xe sử dụng index"""
+        try:
+            redis = await RedisService._get_client()
+            route_key = f"routes:{diemDi}:{diemDen}"
+            ma_cx_list = await redis.smembers(route_key)
+            if not ma_cx_list:
+                return []
+            
+            # Batch get chuyen_xe
+            chuyen_xe_list = await RedisService.get_multiple("chuyenXe", list(ma_cx_list))
+            return [cx for cx in chuyen_xe_list if cx]
+        except Exception:
+            # If index fails, return empty so it falls back to scan
+            return []
+    
+    @staticmethod
     async def search_chuyen_xe(diemDi: str, diemDen: str) -> List[dict]:
-        """Tìm chuyến xe theo điểm đi và điểm đến"""
+        """Tìm chuyến xe theo điểm đi và điểm đến - ưu tiên index"""
+        # Try indexed search first
+        result = await RedisService.search_chuyen_xe_indexed(diemDi, diemDen)
+        if result:
+            return result
+        
+        # Fallback to scan
         return await RedisService.find("chuyenXe", {"diemDi": diemDi, "diemDen": diemDen})
     
     # ---------- LỊCH CHẠY ----------
@@ -409,7 +496,7 @@ class RedisService:
     async def get_booked_seats_by_lich_chay(maLC: str) -> List[str]:
         """
         Lấy danh sách ghế đã đặt cho một lịch chạy
-        Chỉ lấy vé có trạng thái "paid" hoặc "confirmed"
+        Ưu tiên sử dụng set "booked:{maLC}", nếu không có thì scan veXe
         
         Args:
             maLC: Mã lịch chạy
@@ -417,6 +504,15 @@ class RedisService:
         Returns:
             List mã ghế đã đặt
         """
+        redis = await RedisService._get_client()
+        
+        # Try to get from set first (faster)
+        booked_set_key = f"booked:{maLC}"
+        booked_seats = await redis.smembers(booked_set_key)
+        if booked_seats:
+            return list(booked_seats)
+        
+        # Fallback to scanning veXe (slower)
         ve_list = await RedisService.find("veXe", {"maLC": maLC})
         booked_seats = []
         for ve in ve_list:
@@ -426,6 +522,11 @@ class RedisService:
                     booked_seats.append(ve.get("maGhe"))
                 elif ve.get("soGhe"):
                     booked_seats.extend(ve.get("soGhe", []))
+        
+        # Cache the result in set for future use
+        if booked_seats:
+            await redis.sadd(booked_set_key, *booked_seats)
+        
         return booked_seats
 
 

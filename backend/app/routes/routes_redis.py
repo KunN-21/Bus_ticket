@@ -21,29 +21,21 @@ from app.models.entities import (
     GheNgoiWithStatus
 )
 from app.services.redis_service import redis_service
+import json
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
 
 
-@router.get("/debug/collections")
-async def debug_collections():
+@router.post("/build-indexes")
+async def build_indexes():
     """
-    Debug: Liệt kê các collections trong Redis
+    Xây dựng các index để tăng tốc độ truy vấn
     """
     try:
-        collections = ["chucVu", "nhanVien", "khachHang", "xe", "gheNgoi", "chuyenXe", "lichChay", "veXe", "hoaDon"]
-        result = {
-            "collections": collections,
-            "counts": {}
-        }
-        
-        for col_name in collections:
-            count = await redis_service.count(col_name)
-            result["counts"][col_name] = count
-        
-        return result
+        await redis_service.build_indexes()
+        return {"message": "Indexes built successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi debug: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Lỗi xây dựng index: {str(e)}")
 
 
 @router.get("/cities")
@@ -136,11 +128,45 @@ async def search_routes(search: RouteSearchRequest):
         except ValueError:
             raise HTTPException(status_code=400, detail="Ngày đi không hợp lệ. Định dạng: YYYY-MM-DD")
         
+        # Check cache first
+        cache_key = f"search:{search.diemDi}:{search.diemDen}:{search.ngayDi}:{search.limit}"
+        redis_client = await redis_service._get_client()
+        try:
+            cached_result = await redis_client.get(cache_key)
+            if cached_result:
+                # Redis returns bytes, decode and parse
+                cached_dicts = json.loads(cached_result.decode('utf-8'))
+                return [RouteSearchResponse(**item) for item in cached_dicts]
+        except Exception:
+            # If cache fails, continue without it
+            pass
+        
         # Tìm chuyến xe theo điểm đi/đến
         chuyen_xe_list = await redis_service.search_chuyen_xe(search.diemDi, search.diemDen)
         
         if not chuyen_xe_list:
             return []
+        
+        # Collect all maXe for batch fetch
+        ma_xe_list = [chuyen_xe.get("maXe") for chuyen_xe in chuyen_xe_list if chuyen_xe.get("maXe")]
+        xe_dict = {}
+        if ma_xe_list:
+            try:
+                xe_list = await redis_service.get_multiple("xe", ma_xe_list)
+                xe_dict = {ma_xe: xe for ma_xe, xe in zip(ma_xe_list, xe_list) if xe}
+            except Exception:
+                # If batch fetch fails, fetch individually
+                xe_dict = {}
+                for ma_xe in ma_xe_list:
+                    try:
+                        xe = await redis_service.get_xe(ma_xe)
+                        if xe:
+                            xe_dict[ma_xe] = xe
+                    except Exception:
+                        continue
+        
+        # Cache ghe_list per xe
+        ghe_cache = {}
         
         result = []
         
@@ -148,8 +174,8 @@ async def search_routes(search: RouteSearchRequest):
             maCX = chuyen_xe.get("maCX")
             maXe = chuyen_xe.get("maXe")
             
-            # Lấy thông tin xe
-            xe = await redis_service.get_xe(maXe)
+            # Lấy thông tin xe từ dict
+            xe = xe_dict.get(maXe)
             if not xe:
                 continue
             
@@ -178,12 +204,13 @@ async def search_routes(search: RouteSearchRequest):
                 if ngayKhoiHanh and ngayKhoiHanh != search.ngayDi:
                     continue
                 
-                # Lấy tất cả ghế của xe
-                ghe_list = await redis_service.get_ghe_by_xe(maXe)
+                # Lấy tất cả ghế của xe (từ cache)
+                if maXe not in ghe_cache:
+                    ghe_cache[maXe] = await redis_service.get_ghe_by_xe(maXe)
+                ghe_list = ghe_cache[maXe]
                 total_seats = len(ghe_list) if ghe_list else xe.get("soGhe", 34)
                 
                 # Lấy ghế đã đặt cho lịch chạy + ngày này
-                # Chỉ tính vé có trạng thái "paid" hoặc "confirmed"
                 booked_seats = await redis_service.get_booked_seats_by_lich_chay(maLC)
                 
                 # Tính số ghế còn trống
@@ -220,6 +247,22 @@ async def search_routes(search: RouteSearchRequest):
                     giaVe=gia_ve,
                     thoiGianQuangDuong=str(thoi_gian_chay)
                 ))
+                
+                # Check limit
+                if len(result) >= search.limit:
+                    break
+            
+            if len(result) >= search.limit:
+                break
+        
+        # Cache result for 5 minutes
+        if result:
+            try:
+                result_dicts = [r.dict() for r in result]
+                await redis_client.setex(cache_key, 300, json.dumps(result_dicts))
+            except Exception:
+                # If caching fails, just continue
+                pass
         
         return result
     except HTTPException:

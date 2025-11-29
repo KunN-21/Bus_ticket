@@ -250,6 +250,7 @@ class RouteSearchRequest(BaseModel):
     diemDi: str
     diemDen: str
     ngayDi: str  # format: "YYYY-MM-DD"
+    limit: Optional[int] = Field(default=50, ge=1, le=200)  # Giới hạn số kết quả trả về
 
 
 class RouteSearchResponse(BaseModel):

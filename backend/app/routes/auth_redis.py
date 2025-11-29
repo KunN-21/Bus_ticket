@@ -29,6 +29,7 @@ from app.services.otp_service import (
 from app.core import hash_password, verify_password, create_access_token
 from app.core.middleware import get_current_customer
 from app.services.redis_service import redis_service
+from app.utils import format_datetime_hcm
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -182,7 +183,7 @@ async def complete_registration(request: CompleteRegistrationRequest):
         "SDT": request.SDT,
         "CCCD": request.CCCD,
         "diaChi": request.diaChi,
-        "thoiGianTao": datetime.utcnow().isoformat(),
+        "thoiGianTao": format_datetime_hcm(),
         "lanCuoiDangNhap": None
     }
     
@@ -258,12 +259,12 @@ async def login(request: LoginRequest):
     if user_type == "customer":
         await redis_service.update_khach_hang(
             user[id_field], 
-            {"lanCuoiDangNhap": datetime.utcnow().isoformat()}
+            {"lanCuoiDangNhap": format_datetime_hcm()}
         )
     else:
         await redis_service.update(
             "nhanVien", "maNV", user[id_field],
-            {"lanCuoiDangNhap": datetime.utcnow().isoformat()}
+            {"lanCuoiDangNhap": format_datetime_hcm()}
         )
     
     # Generate token with role information

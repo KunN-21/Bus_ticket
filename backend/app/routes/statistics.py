@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from app.core.database import mongodb_client
 from app.core.middleware import get_current_employee
+from app.utils import get_current_time_hcm
 
 router = APIRouter(prefix="/api/v1/statistics", tags=["Statistics"])
 
@@ -50,7 +51,7 @@ class OverviewStats(BaseModel):
 # ========== HELPER FUNCTIONS ==========
 def get_date_range(period: str):
     """Lấy khoảng thời gian theo period"""
-    now = datetime.utcnow()
+    now = get_current_time_hcm()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     
     if period == "today":
@@ -203,7 +204,7 @@ async def get_daily_revenue(
     Lấy doanh thu theo từng ngày (để vẽ biểu đồ)
     """
     db = mongodb_client.get_db()
-    now = datetime.utcnow()
+    now = get_current_time_hcm()
     start_date = now - timedelta(days=days)
     
     pipeline = [
@@ -277,7 +278,7 @@ async def get_monthly_revenue(
     Lấy doanh thu theo từng tháng (để vẽ biểu đồ)
     """
     db = mongodb_client.get_db()
-    now = datetime.utcnow()
+    now = get_current_time_hcm()
     
     # Tính ngày bắt đầu (đầu tháng cách đây N tháng)
     start_month = now.month - months
@@ -539,7 +540,7 @@ async def get_summary_dashboard(current_user: dict = Depends(get_current_employe
     db = mongodb_client.get_db()
     
     # Thống kê tổng quan
-    now = datetime.utcnow()
+    now = get_current_time_hcm()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=now.weekday())
     month_start = today_start.replace(day=1)

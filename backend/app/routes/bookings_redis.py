@@ -18,6 +18,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 import json
 import time
+from app.utils import get_current_time_hcm, get_current_timestamp_hcm, format_datetime_hcm
 import random
 
 from app.models.entities import (
@@ -28,6 +29,7 @@ from app.models.entities import (
 )
 from app.core.database import redis_client
 from app.core.middleware import get_current_customer
+from app.services.vietqr_service import vietqr_service
 from app.services.redis_service import redis_service
 
 router = APIRouter(prefix="/api/v1/bookings", tags=["Bookings"])
@@ -164,7 +166,7 @@ async def create_pending_booking(
         }
     
     # Tạo pending booking
-    expire_at = datetime.utcnow().timestamp() + HOLD_DURATION
+    expire_at = get_current_timestamp_hcm() + HOLD_DURATION
     booking_info = {
         "maHD": maHD,
         "maLC": maLC,
@@ -173,8 +175,8 @@ async def create_pending_booking(
         "danhSachGhe": danhSachGhe,
         "maKH": maKH,
         "tongTien": tongTien,
-        "created_at": datetime.utcnow().isoformat(),
-        "expire_at": datetime.utcnow().timestamp() + HOLD_DURATION
+        "created_at": format_datetime_hcm(),
+        "expire_at": get_current_timestamp_hcm() + HOLD_DURATION
     }
     
     pending_bookings[sessionId] = booking_info
@@ -348,8 +350,11 @@ async def create_booking(request: BookingCreateRequest, current_user: dict = Dep
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("message"))
     
-    # TODO: Tạo QR code thanh toán (nếu cần)
-    qr_code = None
+    # Tạo QR code thanh toán
+    qr_code = await vietqr_service.create_payment_qr(
+        ma_dat_ve=maHD,
+        amount=tong_tien
+    )
     
     return BookingCreateResponse(
         maHD=maHD,
@@ -357,7 +362,7 @@ async def create_booking(request: BookingCreateRequest, current_user: dict = Dep
         danhSachGhe=request.danhSachGhe,
         tongTien=tong_tien,
         trangThai="pending",
-        ngayDat=datetime.utcnow().isoformat(),
+        ngayDat=format_datetime_hcm(),
         qrCode=qr_code,
         paymentInfo={
             "amount": tong_tien,
@@ -404,7 +409,7 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
     if booking_info.get("maKH") != maKH:
         raise HTTPException(status_code=403, detail="Bạn không có quyền với booking này")
     
-    now = datetime.utcnow()
+    now = get_current_time_hcm()
     
     # Tạo hóa đơn
     hoa_don = {
@@ -582,8 +587,8 @@ async def create_cancel_request(request: CancelRequest, current_user: dict = Dep
         "tienHoanDuKien": request.tienHoanDuKien,
         "phanTramHoan": request.phanTramHoan,
         "trangThai": "pending",
-        "ngayTao": datetime.now().isoformat(),
-        "ngayCapNhat": datetime.now().isoformat()
+        "ngayTao": format_datetime_hcm(),
+        "ngayCapNhat": format_datetime_hcm()
     }
     
     # Lưu vào Redis
@@ -592,7 +597,7 @@ async def create_cancel_request(request: CancelRequest, current_user: dict = Dep
     # Cập nhật trạng thái vé
     update_data = {
         "trangThai": "cancel_pending",
-        "ngayCapNhat": datetime.now().isoformat()
+        "ngayCapNhat": format_datetime_hcm()
     }
     await redis_service.update_ve_xe(request.maDatVe, update_data)
     

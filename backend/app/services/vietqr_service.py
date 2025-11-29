@@ -82,6 +82,8 @@ class VietQRService:
         try:
             add_info = f"VOOBUS {ma_dat_ve}"  # Nội dung chuyển khoản
             
+            print(f"🔄 Generating QR for {ma_dat_ve}, amount: {amount}")
+            
             result = await VietQRService.generate_qr(
                 account_no=account_no,
                 account_name=account_name,
@@ -91,32 +93,34 @@ class VietQRService:
                 template="compact2"
             )
             
+            print(f"📥 VietQR API response code: {result.get('code')}, desc: {result.get('desc')}")
+            
             if result.get("code") == "00":
                 data = result.get("data", {})
                 
-                # VietQR API có thể trả về qrDataURL hoặc qrCode
-                # qrDataURL: URL link đến ảnh QR (https://...)
-                # qrCode: Base64 string (có hoặc không có prefix)
-                qr_url = data.get("qrDataURL")
-                qr_code = data.get("qrCode")
+                # VietQR API trả về qrDataURL là chuỗi base64 với prefix data:image/png;base64,
+                # Dù tên là "URL" nhưng thực tế là base64 encoded image
+                qr_data = data.get("qrDataURL") or data.get("qrCode")
                 
-                # Ưu tiên dùng qrDataURL (link) vì nó nhẹ hơn
-                if qr_url:
-                    print(f"✅ QR generated (URL) for {ma_dat_ve}: {qr_url[:80]}...")
-                    return qr_url
-                elif qr_code:
-                    # Nếu qrCode chưa có prefix, thêm vào
-                    if not qr_code.startswith("data:image"):
-                        qr_code = f"data:image/png;base64,{qr_code}"
-                    print(f"✅ QR generated (base64) for {ma_dat_ve}: {len(qr_code)} chars")
-                    return qr_code
+                if qr_data:
+                    # Đảm bảo có prefix đúng để browser hiển thị được
+                    if not qr_data.startswith("data:image"):
+                        qr_data = f"data:image/png;base64,{qr_data}"
+                    print(f"✅ QR generated for {ma_dat_ve}: {len(qr_data)} chars")
+                    return qr_data
                 else:
-                    print(f"❌ VietQR: No QR data in response")
+                    print(f"❌ VietQR: No QR data in response. Full response: {result}")
                     return None
             else:
                 print(f"❌ VietQR Error: {result.get('desc')}")
                 return None
                 
+        except httpx.TimeoutException as e:
+            print(f"❌ VietQR Timeout: {str(e)}")
+            return None
+        except httpx.HTTPStatusError as e:
+            print(f"❌ VietQR HTTP Error: {e.response.status_code} - {e.response.text}")
+            return None
         except Exception as e:
             print(f"❌ Error generating QR: {str(e)}")
             import traceback

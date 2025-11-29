@@ -1,13 +1,21 @@
+"""
+Authentication Routes - Đăng ký, đăng nhập
+
+Sử dụng Redis để lưu trữ:
+- khachHang:{maKH} - Thông tin khách hàng
+- nhanVien:{maNV} - Thông tin nhân viên
+- chucVu:{maCV} - Thông tin chức vụ
+"""
 from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime
-from app.core import mongodb_client
-from app.models import (
+from app.models.entities import (
+    LoginRequest, 
     RegisterInitiate, 
     VerifyOTPRequest, 
     SetPasswordRequest, 
     CompleteRegistrationRequest,
-    LoginRequest,
-    Token
+    Token,
+    KhachHangResponse
 )
 from app.services.otp_service import (
     generate_otp, 
@@ -20,6 +28,7 @@ from app.services.otp_service import (
 )
 from app.core import hash_password, verify_password, create_access_token
 from app.core.middleware import get_current_customer
+from app.services.redis_service import redis_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -32,10 +41,8 @@ async def initiate_registration(request: RegisterInitiate):
     - Check if email exists
     - Generate and send OTP
     """
-    db = mongodb_client.get_db()
-    
     # Check if email already exists
-    existing_user = await db.khachhang.find_one({"email": request.email})
+    existing_user = await redis_service.get_khach_hang_by_email(request.email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -60,6 +67,7 @@ async def initiate_registration(request: RegisterInitiate):
         "message": "OTP đã được gửi đến email của bạn",
         "email": request.email
     }
+
 
 @router.post("/register/verify-otp")
 async def verify_registration_otp(request: VerifyOTPRequest):
@@ -91,6 +99,7 @@ async def verify_registration_otp(request: VerifyOTPRequest):
         "message": "Xác thực OTP thành công",
         "email": request.email
     }
+
 
 @router.post("/register/set-password")
 async def set_registration_password(request: SetPasswordRequest):
@@ -128,6 +137,7 @@ async def set_registration_password(request: SetPasswordRequest):
         "email": request.email
     }
 
+
 @router.post("/register/complete")
 async def complete_registration(request: CompleteRegistrationRequest):
     """
@@ -136,8 +146,6 @@ async def complete_registration(request: CompleteRegistrationRequest):
     - Create customer account
     - Generate access token
     """
-    db = mongodb_client.get_db()
-    
     # Check registration step
     reg_step = await get_registration_step(request.email)
     if not reg_step or reg_step["step"] != "password_set":
@@ -154,7 +162,7 @@ async def complete_registration(request: CompleteRegistrationRequest):
         )
     
     # Check if CCCD already exists
-    existing_cccd = await db.khachhang.find_one({"CCCD": request.CCCD})
+    existing_cccd = await redis_service.find_one("khachHang", {"CCCD": request.CCCD})
     if existing_cccd:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -162,10 +170,10 @@ async def complete_registration(request: CompleteRegistrationRequest):
         )
     
     # Generate maKH
-    count = await db.khachhang.count_documents({})
+    count = await redis_service.count("khachHang")
     maKH = f"KH{count + 1:05d}"
     
-    # Create customer
+    # Create customer data
     customer_data = {
         "maKH": maKH,
         "email": request.email,
@@ -174,11 +182,12 @@ async def complete_registration(request: CompleteRegistrationRequest):
         "SDT": request.SDT,
         "CCCD": request.CCCD,
         "diaChi": request.diaChi,
-        "thoiGianTao": datetime.utcnow(),
+        "thoiGianTao": datetime.utcnow().isoformat(),
         "lanCuoiDangNhap": None
     }
     
-    await db.khachhang.insert_one(customer_data)
+    # Save to Redis
+    await redis_service.create_khach_hang(customer_data)
     
     # Clean up registration data
     await delete_registration_step(request.email)
@@ -192,15 +201,15 @@ async def complete_registration(request: CompleteRegistrationRequest):
     access_token = create_access_token(token_data)
     
     # Remove password from response
-    customer_data.pop("password")
-    customer_data.pop("_id")
+    response_data = {k: v for k, v in customer_data.items() if k != "password"}
     
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": customer_data,
+        "user": response_data,
         "message": "Đăng ký thành công!"
     }
+
 
 # ========== LOGIN ==========
 
@@ -208,37 +217,28 @@ async def complete_registration(request: CompleteRegistrationRequest):
 async def login(request: LoginRequest):
     """
     Universal login for both customers and employees
-    - Checks khachhang collection first
-    - If not found, checks nhanvien collection
-    - For employees, retrieves chucvu (role) information
-    - Returns user_type and role to determine access level
-      * customer → regular customer
-      * employee + admin → full admin access
-      * employee + nhanvien → ticket sales staff access
+    - Checks khachHang collection first
+    - If not found, checks nhanVien collection
+    - For employees, retrieves chucVu (role) information
     """
-    db = mongodb_client.get_db()
-    
-    # Try to find in khachhang (customers) first
-    user = await db.khachhang.find_one({"email": request.email})
+    # Try to find in khachHang (customers) first
+    user = await redis_service.get_khach_hang_by_email(request.email)
     user_type = "customer"
-    collection_name = "khachhang"
     id_field = "maKH"
     role = None
     chuc_vu_info = None
     
-    # If not found in customers, check nhanvien (employees)
+    # If not found in customers, check nhanVien (employees)
     if not user:
-        user = await db.nhanvien.find_one({"email": request.email})
+        user = await redis_service.get_nhan_vien_by_email(request.email)
         user_type = "employee"
-        collection_name = "nhanvien"
         id_field = "maNV"
         
         # If employee found, get chuc vu (role) information
-        if user and user.get("maChucVu"):
-            chuc_vu_info = await db.chucvu.find_one({"maChucVu": user["maChucVu"]})
+        if user and user.get("maCV"):
+            chuc_vu_info = await redis_service.get_chuc_vu(user["maCV"])
             if chuc_vu_info:
-                # Keep canonical maChucVu (e.g. "CV001") in the token instead of lowercasing
-                role = chuc_vu_info.get("maChucVu", "")
+                role = chuc_vu_info.get("maCV", "")
     
     # If still not found, invalid credentials
     if not user:
@@ -248,17 +248,23 @@ async def login(request: LoginRequest):
         )
     
     # Verify password
-    if not verify_password(request.password, user["password"]):
+    if not verify_password(request.password, user.get("password", "")):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email hoặc mật khẩu không chính xác"
         )
     
     # Update last login
-    await db[collection_name].update_one(
-        {"email": request.email},
-        {"$set": {"lanCuoiDangNhap": datetime.utcnow()}}
-    )
+    if user_type == "customer":
+        await redis_service.update_khach_hang(
+            user[id_field], 
+            {"lanCuoiDangNhap": datetime.utcnow().isoformat()}
+        )
+    else:
+        await redis_service.update(
+            "nhanVien", "maNV", user[id_field],
+            {"lanCuoiDangNhap": datetime.utcnow().isoformat()}
+        )
     
     # Generate token with role information
     token_data = {
@@ -272,21 +278,20 @@ async def login(request: LoginRequest):
     access_token = create_access_token(token_data)
     
     # Remove password from response
-    user.pop("password")
-    user.pop("_id")
+    user_response = {k: v for k, v in user.items() if k != "password"}
     
     # Add chuc vu info to user response for employees
     if chuc_vu_info:
-        chuc_vu_info.pop("_id", None)
-        user["chucVuInfo"] = chuc_vu_info
+        user_response["chucVuInfo"] = chuc_vu_info
     
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user_type": user_type,
         "role": role,
-        "user": user
+        "user": user_response
     }
+
 
 # ========== RESEND OTP ==========
 
@@ -328,20 +333,14 @@ async def get_current_user(current_user: dict = Depends(get_current_customer)):
     Get current logged in user information
     Returns user profile with soDienThoai field mapped from SDT
     """
-    db = mongodb_client.get_db()
-    
-    # Get full user info from database
-    user = await db.khachhang.find_one({"maKH": current_user["maKH"]})
+    # Get full user info from Redis
+    user = await redis_service.get_khach_hang(current_user["maKH"])
     
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Không tìm thấy thông tin người dùng"
         )
-    
-    # Remove sensitive fields
-    user.pop("password", None)
-    user.pop("_id", None)
     
     # Map SDT to soDienThoai for frontend compatibility
     return {

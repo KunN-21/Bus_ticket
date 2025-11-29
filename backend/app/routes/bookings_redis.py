@@ -424,6 +424,14 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
     await redis_service.create_hoa_don(hoa_don)
     
     # Tạo các vé
+    # Lấy giá vé từ chuyến xe
+    lich_chay = await redis_service.get_lich_chay(booking_info["maLC"])
+    gia_ve = 0
+    if lich_chay:
+        chuyen_xe = await redis_service.get_chuyen_xe(lich_chay.get("maCX", ""))
+        if chuyen_xe:
+            gia_ve = chuyen_xe.get("giaChuyenXe", 0)
+    
     for i, maVe in enumerate(booking_info["danhSachVe"]):
         ve_xe = {
             "maVe": maVe,
@@ -431,6 +439,8 @@ async def confirm_payment(request: PaymentConfirmRequest, current_user: dict = D
             "maLC": booking_info["maLC"],
             "maGhe": booking_info["danhSachGhe"][i],
             "maHD": booking_info["maHD"],
+            "giaVe": gia_ve,
+            "ngayDat": now.isoformat(),
             "trangThai": "paid"
         }
         await redis_service.create_ve_xe(ve_xe)

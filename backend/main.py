@@ -1,23 +1,17 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core import redis_client
 from app.config import settings
-from app.routes import auth_router, users_router, routes_router, bookings_router
-
-# Admin routers - cần cập nhật sau
-# from app.routes.admin_employees import router as admin_employees_router
-# from app.routes.admin_customers import router as admin_customers_router
-# from app.routes.roles import router as roles_router
-# from app.routes.admin_bookings import router as admin_bookings_router
-# from app.routes.statistics import router as statistics_router
+from app.routes import auth_router, users_router, routes_router
+from app.routes.bookings_redis import router as bookings_router
+from app.routes.statistics_redis import router as statistics_router
+from app.routes.admin_redis import router as admin_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup - Redis only
     await redis_client.connect()
     yield
-    # Shutdown
     await redis_client.disconnect()
 
 app = FastAPI(
@@ -26,7 +20,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -42,32 +35,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(routes_router)
 app.include_router(bookings_router)
-
-# Admin routers - tạm thời disable, cần cập nhật sang Redis
-# app.include_router(admin_employees_router)
-# app.include_router(admin_customers_router)
-# app.include_router(roles_router)
-# app.include_router(admin_bookings_router)
-# app.include_router(statistics_router)
+app.include_router(statistics_router)
+app.include_router(admin_router)
 
 @app.get("/")
 async def root():
-    return {
-        "message": "🎫 Booking Ticket API",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
+    return {"message": "Booking Ticket API", "version": "1.0.0", "docs": "/docs"}
 
 @app.get("/health")
 async def health_check():
     redis_status = "connected" if redis_client.get_client() is not None else "disconnected"
-    
-    return {
-        "status": "healthy",
-        "redis": redis_status
-    }
+    return {"status": "healthy", "redis": redis_status}

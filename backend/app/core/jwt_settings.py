@@ -21,13 +21,15 @@ def hash_password(password: str) -> str:
     return hashed.decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against bcrypt hash"""
+    """Verify password against bcrypt hash or plain text (for legacy data)"""
     try:
+        # First try bcrypt verification
         password_bytes = plain_password.encode('utf-8')
         hashed_bytes = hashed_password.encode('utf-8')
         return bcrypt.checkpw(password_bytes, hashed_bytes)
     except Exception:
-        return False
+        # Fallback: direct comparison for plain text passwords (legacy data)
+        return plain_password == hashed_password
 
 def create_access_token(data: dict) -> str:
     """Create JWT access token"""

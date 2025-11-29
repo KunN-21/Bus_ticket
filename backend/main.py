@@ -3,8 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core import redis_client
 from app.config import settings
-from app.routes import auth_router, users_router, routes_router
-from app.routes.bookings_redis import router as bookings_router
+from app.routes import auth_router, users_router, routes_router, bookings_router
 
 # Admin routers - cần cập nhật sau
 # from app.routes.admin_employees import router as admin_employees_router

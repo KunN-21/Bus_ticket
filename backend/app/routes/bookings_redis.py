@@ -28,6 +28,7 @@ from app.models.entities import (
 )
 from app.core.database import redis_client
 from app.core.middleware import get_current_customer
+from app.services.vietqr_service import vietqr_service
 from app.services.redis_service import redis_service
 
 router = APIRouter(prefix="/api/v1/bookings", tags=["Bookings"])
@@ -348,8 +349,11 @@ async def create_booking(request: BookingCreateRequest, current_user: dict = Dep
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("message"))
     
-    # TODO: Tạo QR code thanh toán (nếu cần)
-    qr_code = None
+    # Tạo QR code thanh toán
+    qr_code = await vietqr_service.create_payment_qr(
+        ma_dat_ve=maHD,
+        amount=tong_tien
+    )
     
     return BookingCreateResponse(
         maHD=maHD,

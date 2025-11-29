@@ -228,8 +228,6 @@
         </a>
         <nav class="nav-menu">
           <a href="index.html" class="nav-link">Trang chủ</a>
-          <a href="index.html#lookup" class="nav-link">Tra cứu vé</a>
-          <a href="index.html#invoice" class="nav-link">Hóa đơn</a>
           <a href="index.html#about" class="nav-link">Về chúng tôi</a>
         </nav>
 
@@ -257,7 +255,7 @@
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
               <span id="userName">Tài khoản</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
             </button>
@@ -351,14 +349,14 @@
   <div class="cancel-modal-overlay" id="cancelModal">
     <div class="cancel-modal">
       <div class="cancel-modal-header">
-        <h3>🎫 Yêu cầu hủy vé</h3>
+        <h3>Yêu cầu hủy vé</h3>
         <button class="cancel-modal-close" onclick="closeCancelModal()">✕</button>
       </div>
       <div class="cancel-modal-body">
         <div class="ticket-info-summary" id="cancelTicketInfo"></div>
         
         <div class="cancel-policy">
-          <h4>📋 Chính sách hủy vé</h4>
+          <h4>Chính sách hủy vé</h4>
           <ul>
             <li><strong>Hủy trước 24h:</strong> Hoàn 80% giá vé</li>
             <li><strong>Hủy trước 12h:</strong> Hoàn 50% giá vé</li>
@@ -411,7 +409,7 @@
   <div class="detail-modal-overlay" id="detailModal">
     <div class="detail-modal">
       <div class="detail-modal-header">
-        <h3>🎫 Chi tiết vé xe</h3>
+        <h3>Chi tiết vé xe</h3>
         <button class="detail-modal-close" onclick="closeDetailModal()">✕</button>
       </div>
       <div class="detail-modal-body" id="detailModalBody">
@@ -809,7 +807,7 @@
       if (!tickets || tickets.length === 0) { 
         el.innerHTML = `
           <div class="empty-state">
-            <div class="empty-icon">🎫</div>
+            
             <h3>Chưa có vé</h3>
             <p>Bạn chưa mua vé nào. Hãy đặt vé ngay để trải nghiệm dịch vụ của chúng tôi!</p>
           </div>
@@ -840,21 +838,20 @@
               <div>
                 <div class="ticket-route">${route}</div>
                 <div class="ticket-meta">
-                  <span>🎫 Mã vé: <strong>${t.maVe}</strong></span>
-                  <span>💺 Ghế: <strong>${seats}</strong></span>
+                  <span>Mã vé: <strong>${t.maVe}</strong></span>
+                  <span>Ghế: <strong>${seats}</strong></span>
                 </div>
               </div>
             </div>
             <div class="ticket-details">
               <div class="detail-item">
-                <div class="detail-icon">📅</div>
+                
                 <div class="detail-content">
                   <div class="detail-label">Ngày giờ khởi hành</div>
                   <div class="detail-value">${formatDateTime(ngayKhoiHanh, gioKhoiHanh)}</div>
                 </div>
               </div>
               <div class="detail-item">
-                <div class="detail-icon">💰</div>
                 <div class="detail-content">
                   <div class="detail-label">Giá vé</div>
                   <div class="detail-value ticket-price">${formatCurrency(giaVe)}</div>
@@ -956,42 +953,38 @@
           
           <div class="ticket-info-grid">
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">📅</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Ngày khởi hành</div>
                 <div class="ticket-info-value">${formatDateTime(ngayKhoiHanh, null)}</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">🕐</div>
+
+              </div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Giờ xuất bến</div>
                 <div class="ticket-info-value">${gioKhoiHanh}</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">💺</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Số ghế</div>
                 <div class="ticket-info-value">${seats}</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">🎫</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Số lượng vé</div>
                 <div class="ticket-info-value">1 vé</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">🚌</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Loại xe</div>
                 <div class="ticket-info-value">${ticket.chuyenXe?.loaiXe || 'Limousine'}</div>
               </div>
             </div>
             <div class="ticket-info-item">
-              <div class="ticket-info-icon">💰</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Giá vé</div>
                 <div class="ticket-info-value price">${formatCurrency(giaVe)}</div>
@@ -1002,7 +995,7 @@
           ${ticket.ngayThanhToan ? `
           <div class="ticket-info-grid" style="margin-top: 16px;">
             <div class="ticket-info-item">
-              <div class="ticket-info-icon" style="background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);">✓</div>
+              style="background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);">✓</div>
               <div class="ticket-info-content">
                 <div class="ticket-info-label">Ngày thanh toán</div>
                 <div class="ticket-info-value">${formatDateTime(ticket.ngayThanhToan, null)}</div>

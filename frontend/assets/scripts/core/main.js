@@ -215,6 +215,14 @@ function searchTickets(event) {
     
     if (!departDate) {
         errors.push('⚠️ Vui lòng chọn ngày đi');
+    } else {
+        // Check if depart date is not in the past
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day
+        const selectedDate = new Date(departDate);
+        if (selectedDate < today) {
+            errors.push('⚠️ Ngày đi không được trong quá khứ');
+        }
     }
     
     if (!tickets || tickets < 1) {

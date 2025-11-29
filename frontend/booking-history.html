@@ -364,14 +364,10 @@
   <script src="assets/scripts/core/main.js?v=2"></script>
   <script>
     const API_BASE_URL = 'http://localhost:8000';
+    let allBookings = [];
     
-    const mockHistory = [
-      { id: 'BK001', date: '2025-11-05T14:30:00', route: 'TP.HCM - Hà Nội', departureDate: '2025-11-10', seats: 'A12, A13', amount: 1700000, status: 'success', paymentMethod: 'Chuyển khoản' },
-      { id: 'BK002', date: '2025-11-04T10:15:00', route: 'TP.HCM - Đà Nẵng', departureDate: '2025-11-15', seats: 'B05', amount: 450000, status: 'pending', paymentMethod: 'Tiền mặt' },
-      { id: 'BK003', date: '2025-10-28T16:45:00', route: 'Hà Nội - Hải Phòng', departureDate: '2025-11-01', seats: 'C08', amount: 250000, status: 'failed', paymentMethod: 'Thẻ ATM' }
-    ];
-
     function formatDateTime(dt) { 
+      if (!dt) return 'N/A';
       const d = new Date(dt); 
       return d.toLocaleString('vi-VN', {
         year: 'numeric',
@@ -383,6 +379,7 @@
     }
 
     function formatDate(dt) { 
+      if (!dt) return 'N/A';
       const d = new Date(dt); 
       return d.toLocaleDateString('vi-VN', {
         year: 'numeric',
@@ -395,16 +392,20 @@
       return new Intl.NumberFormat('vi-VN', {
         style: 'currency',
         currency: 'VND'
-      }).format(amount);
+      }).format(amount || 0);
     }
 
     function getStatusInfo(status) {
       const map = {
+        'paid': { text: 'Thành công', class: 'status-success' },
         'success': { text: 'Thành công', class: 'status-success' },
         'pending': { text: 'Đang xử lý', class: 'status-pending' },
-        'failed': { text: 'Thất bại', class: 'status-failed' }
+        'cancelled': { text: 'Đã hủy', class: 'status-failed' },
+        'cancel_pending': { text: 'Chờ duyệt hủy', class: 'status-pending' },
+        'failed': { text: 'Thất bại', class: 'status-failed' },
+        'refunded': { text: 'Đã hoàn tiền', class: 'status-failed' }
       };
-      return map[status] || { text: status, class: 'status-pending' };
+      return map[status] || { text: status || 'Chưa xác định', class: 'status-pending' };
     }
 
     function renderHistory(items) {
@@ -421,17 +422,22 @@
         return; 
       }
       
-      el.innerHTML = items.map(i => {
-        const statusInfo = getStatusInfo(i.status);
+      el.innerHTML = items.map(item => {
+        const statusInfo = getStatusInfo(item.trangThai);
+        const seats = Array.isArray(item.soGheNgoi) ? item.soGheNgoi.join(', ') : (item.soGheNgoi || 'N/A');
+        const route = item.routeInfo 
+          ? `${item.routeInfo.diemDi} - ${item.routeInfo.diemDen}` 
+          : (item.maTuyenXe || 'N/A');
+        
         return `
           <div class="timeline-item">
             <div class="history-header">
               <div>
                 <div class="history-date">
-                  🕐 ${formatDateTime(i.date)}
+                  🕐 ${formatDateTime(item.ngayDat || item.ngayThanhToan || item.createdAt)}
                 </div>
                 <div class="history-title">
-                  Mã đặt chỗ: ${i.id}
+                  Mã đặt chỗ: ${item.maDatVe}
                 </div>
               </div>
               <div class="history-status ${statusInfo.class}">${statusInfo.text}</div>
@@ -441,41 +447,113 @@
                 <div class="detail-icon">🚌</div>
                 <div class="detail-content">
                   <div class="detail-label">Tuyến đường</div>
-                  <div class="detail-value">${i.route}</div>
+                  <div class="detail-value">${route}</div>
                 </div>
               </div>
               <div class="detail-item">
                 <div class="detail-icon">📅</div>
                 <div class="detail-content">
                   <div class="detail-label">Ngày khởi hành</div>
-                  <div class="detail-value">${formatDate(i.departureDate)}</div>
+                  <div class="detail-value">${formatDate(item.ngayDi)}</div>
+                </div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-icon">🕐</div>
+                <div class="detail-content">
+                  <div class="detail-label">Giờ đi</div>
+                  <div class="detail-value">${item.gioDi || 'N/A'}</div>
                 </div>
               </div>
               <div class="detail-item">
                 <div class="detail-icon">💺</div>
                 <div class="detail-content">
                   <div class="detail-label">Số ghế</div>
-                  <div class="detail-value">${i.seats}</div>
+                  <div class="detail-value">${seats}</div>
                 </div>
               </div>
               <div class="detail-item">
                 <div class="detail-icon">💰</div>
                 <div class="detail-content">
                   <div class="detail-label">Tổng tiền</div>
-                  <div class="detail-value">${formatCurrency(i.amount)}</div>
+                  <div class="detail-value">${formatCurrency(item.tongTien)}</div>
                 </div>
               </div>
               <div class="detail-item">
                 <div class="detail-icon">💳</div>
                 <div class="detail-content">
-                  <div class="detail-label">Phương thức</div>
-                  <div class="detail-value">${i.paymentMethod}</div>
+                  <div class="detail-label">Thanh toán</div>
+                  <div class="detail-value">${item.ngayThanhToan ? formatDateTime(item.ngayThanhToan) : 'Chưa thanh toán'}</div>
                 </div>
               </div>
             </div>
           </div>
         `;
       }).join('');
+    }
+
+    async function loadRouteInfo(bookings) {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      
+      for (let booking of bookings) {
+        if (booking.maTuyen || booking.maTuyenXe) {
+          try {
+            const maTuyen = booking.maTuyen || booking.maTuyenXe;
+            const res = await fetch(`${API_BASE_URL}/routes/${maTuyen}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+              booking.routeInfo = await res.json();
+            }
+          } catch (e) {
+            console.warn('Could not load route info for', booking.maDatVe);
+          }
+        }
+      }
+      return bookings;
+    }
+
+    function filterBookings() {
+      const period = document.getElementById('filterPeriod').value;
+      const status = document.getElementById('filterStatus').value;
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+      
+      let filtered = [...allBookings];
+      
+      // Filter by period
+      if (period !== 'all') {
+        const days = parseInt(period);
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        
+        filtered = filtered.filter(b => {
+          const bookingDate = new Date(b.ngayDat || b.ngayThanhToan || b.createdAt);
+          return bookingDate >= cutoff;
+        });
+      }
+      
+      // Filter by status
+      if (status !== 'all') {
+        const statusMap = {
+          'success': ['paid', 'success'],
+          'pending': ['pending', 'cancel_pending'],
+          'failed': ['cancelled', 'failed', 'refunded']
+        };
+        const validStatuses = statusMap[status] || [];
+        filtered = filtered.filter(b => validStatuses.includes(b.trangThai));
+      }
+      
+      // Filter by search
+      if (search) {
+        filtered = filtered.filter(b => {
+          const maDatVe = (b.maDatVe || '').toLowerCase();
+          const route = b.routeInfo 
+            ? `${b.routeInfo.diemDi} ${b.routeInfo.diemDen}`.toLowerCase()
+            : (b.maTuyenXe || '').toLowerCase();
+          return maDatVe.includes(search) || route.includes(search);
+        });
+      }
+      
+      renderHistory(filtered);
     }
 
     async function loadHistory() {
@@ -488,41 +566,44 @@
       }
       
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/bookings/history`, { 
+        // Load from my-bookings endpoint which already exists
+        const res = await fetch(`${API_BASE_URL}/api/v1/bookings/my-bookings`, { 
           headers: { 'Authorization': `Bearer ${token}` } 
         });
         
         if (!res.ok) { 
-          console.warn('History endpoint not available, using mock data'); 
-          renderHistory(mockHistory); 
-          Toast.info('Hiển thị dữ liệu mẫu. Backend chưa sẵn sàng.');
-          return; 
+          if (res.status === 401) {
+            Toast.warning('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+            setTimeout(() => window.location.href = 'login_register.html', 1500);
+            return;
+          }
+          throw new Error('Failed to load history');
         }
         
-        const data = await res.json(); 
-        renderHistory(data.history || data || []);
+        let data = await res.json();
+        
+        // Load route info for each booking
+        allBookings = await loadRouteInfo(data || []);
+        
+        // Sort by date (newest first)
+        allBookings.sort((a, b) => {
+          const dateA = new Date(a.ngayDat || a.ngayThanhToan || a.createdAt || 0);
+          const dateB = new Date(b.ngayDat || b.ngayThanhToan || b.createdAt || 0);
+          return dateB - dateA;
+        });
+        
+        renderHistory(allBookings);
       } catch (err) { 
         console.error(err); 
-        Toast.error('Không thể tải lịch sử. Hiển thị dữ liệu mẫu.'); 
-        renderHistory(mockHistory); 
+        Toast.error('Không thể tải lịch sử đặt vé.'); 
+        renderHistory([]); 
       }
     }
 
     // Filter handlers
-    document.getElementById('filterPeriod').addEventListener('change', () => {
-      Toast.info('Đang lọc theo thời gian...');
-      loadHistory();
-    });
-
-    document.getElementById('filterStatus').addEventListener('change', () => {
-      Toast.info('Đang lọc theo trạng thái...');
-      loadHistory();
-    });
-
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-      const searchTerm = e.target.value.toLowerCase();
-      // TODO: Implement client-side search filter
-    });
+    document.getElementById('filterPeriod').addEventListener('change', filterBookings);
+    document.getElementById('filterStatus').addEventListener('change', filterBookings);
+    document.getElementById('searchInput').addEventListener('input', filterBookings);
 
     document.addEventListener('DOMContentLoaded', loadHistory);
   </script>

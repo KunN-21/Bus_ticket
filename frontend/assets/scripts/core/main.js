@@ -60,6 +60,12 @@ function swapLocations() {
         
         fromSelect.value = toValue;
         toSelect.value = fromValue;
+        
+        if (fromValue || toValue) {
+            if (typeof Toast !== 'undefined') {
+                Toast.info('Đã đổi chiều hành trình');
+            }
+        }
     }
 }
 

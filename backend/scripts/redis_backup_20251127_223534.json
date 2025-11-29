@@ -1,0 +1,1788 @@
+{
+  "timestamp": "2025-11-27T22:35:13.932174",
+  "host": "redis-10134.crce185.ap-seast-1-1.ec2.redns.redis-cloud.com",
+  "keys": {
+    "nhanVien:NV05": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV05",
+        "hoTen": "Hoàng Ngọc Mai",
+        "email": "mai.hn@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000005",
+        "CCCD": "049195000005",
+        "diaChi": "Quảng Nam",
+        "maCV": "CV02"
+      }
+    },
+    "hoaDon:HD05": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD05",
+        "maKH": "KH05",
+        "maNV": "NV03",
+        "ngayLap": "2025-11-02",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "khachHang:KH17": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH17",
+        "hoTen": "Cao Thái Sơn",
+        "email": "son.ct@gmail.com",
+        "password": "123456",
+        "SDT": "0987654317",
+        "CCCD": "079200000017",
+        "diaChi": "Cần Giờ, TP.HCM"
+      }
+    },
+    "nhanVien:NV01": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV01",
+        "hoTen": "Trương Đức Huy",
+        "email": "admin@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000001",
+        "CCCD": "079090000001",
+        "diaChi": "TP. Hồ Chí Minh",
+        "maCV": "CV01"
+      }
+    },
+    "gheNgoi:GHE30": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE30",
+        "maXe": "XE01",
+        "tenGhe": "A30"
+      }
+    },
+    "gheNgoi:GHE32": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE32",
+        "maXe": "XE01",
+        "tenGhe": "A32"
+      }
+    },
+    "gheNgoi:GHE33": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE33",
+        "maXe": "XE01",
+        "tenGhe": "A33"
+      }
+    },
+    "lichChay:LC20": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC20",
+        "maCX": "CX20",
+        "maXe": "XE20",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-06 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-06 13:00:00"
+      }
+    },
+    "gheNgoi:GHE05": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE05",
+        "maXe": "XE01",
+        "tenGhe": "A05"
+      }
+    },
+    "hoaDon:HD03": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD03",
+        "maKH": "KH03",
+        "maNV": "NV04",
+        "ngayLap": "2025-11-01",
+        "tongTien": "300000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "gheNgoi:GHE27": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE27",
+        "maXe": "XE01",
+        "tenGhe": "A27"
+      }
+    },
+    "gheNgoi:GHE18": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE18",
+        "maXe": "XE01",
+        "tenGhe": "A18"
+      }
+    },
+    "nhanVien:NV13": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV13",
+        "hoTen": "Vũ Đức Thắng",
+        "email": "thang.vd@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000013",
+        "CCCD": "092087000013",
+        "diaChi": "Cần Thơ",
+        "maCV": "CV03"
+      }
+    },
+    "chucVu:CV03": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCV": "CV03",
+        "tenChucVu": "Tài xế",
+        "moTa": "Lái xe khách"
+      }
+    },
+    "chucVu:CV02": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCV": "CV02",
+        "tenChucVu": "Nhân viên bán vé",
+        "moTa": "Bán vé"
+      }
+    },
+    "hoaDon:HD10": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD10",
+        "maKH": "KH10",
+        "maNV": "NV02",
+        "ngayLap": "2025-11-03",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Momo"
+      }
+    },
+    "hoaDon:HD17": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD17",
+        "maKH": "KH17",
+        "maNV": "NV03",
+        "ngayLap": "2025-11-06",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "veXe:VE11": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE11",
+        "maKH": "KH11",
+        "maLC": "LC11",
+        "maGhe": "GHE11",
+        "maHD": "HD11",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "gheNgoi:GHE26": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE26",
+        "maXe": "XE01",
+        "tenGhe": "A26"
+      }
+    },
+    "hoaDon:HD15": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD15",
+        "maKH": "KH15",
+        "maNV": "NV04",
+        "ngayLap": "2025-11-05",
+        "tongTien": "300000",
+        "phuongThucThanhToan": "Momo"
+      }
+    },
+    "gheNgoi:GHE11": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE11",
+        "maXe": "XE01",
+        "tenGhe": "A11"
+      }
+    },
+    "lichChay:LC05": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC05",
+        "maCX": "CX05",
+        "maXe": "XE05",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-02 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-02 13:00:00"
+      }
+    },
+    "lichChay:LC04": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC04",
+        "maCX": "CX04",
+        "maXe": "XE04",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-01 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-01 13:00:00"
+      }
+    },
+    "lichChay:LC07": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC07",
+        "maCX": "CX07",
+        "maXe": "XE07",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-02 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-02 13:00:00"
+      }
+    },
+    "hoaDon:HD09": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD09",
+        "maKH": "KH09",
+        "maNV": "NV04",
+        "ngayLap": "2025-11-03",
+        "tongTien": "300000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "lichChay:LC01": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC01",
+        "maCX": "CX01",
+        "maXe": "XE01",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-01 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-01 13:00:00"
+      }
+    },
+    "veXe:VE13": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE13",
+        "maKH": "KH13",
+        "maLC": "LC13",
+        "maGhe": "GHE13",
+        "maHD": "HD13",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "gheNgoi:GHE22": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE22",
+        "maXe": "XE01",
+        "tenGhe": "A22"
+      }
+    },
+    "khachHang:KH05": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH05",
+        "hoTen": "Hoàng Quốc Việt",
+        "email": "viet.hq@gmail.com",
+        "password": "123456",
+        "SDT": "0987654305",
+        "CCCD": "079200000005",
+        "diaChi": "Gò Vấp, TP.HCM"
+      }
+    },
+    "doanhSoNhanVien": {
+      "type": "zset",
+      "ttl": -1,
+      "value": [
+        {
+          "member": "NV02",
+          "score": 2.0
+        }
+      ]
+    },
+    "nhanVien:NV04": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV04",
+        "hoTen": "Phạm Thanh Trúc",
+        "email": "truc.pt@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000004",
+        "CCCD": "046194000004",
+        "diaChi": "Thừa Thiên Huế",
+        "maCV": "CV02"
+      }
+    },
+    "nhanVien:NV11": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV11",
+        "hoTen": "Dương Văn Lâm",
+        "email": "lam.dv@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000011",
+        "CCCD": "080085000011",
+        "diaChi": "Long An",
+        "maCV": "CV03"
+      }
+    },
+    "nhanVien:NV18": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV18",
+        "hoTen": "Phan Tấn Lộc",
+        "email": "loc.pt@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000018",
+        "CCCD": "096092000018",
+        "diaChi": "Cà Mau",
+        "maCV": "CV03"
+      }
+    },
+    "nhanVien:NV10": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV10",
+        "hoTen": "Ngô Thanh Hải",
+        "email": "hai.nt@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000010",
+        "CCCD": "077084000010",
+        "diaChi": "Bà Rịa - Vũng Tàu",
+        "maCV": "CV03"
+      }
+    },
+    "gheNgoi:GHE03": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE03",
+        "maXe": "XE01",
+        "tenGhe": "A03"
+      }
+    },
+    "lichChay:LC03": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC03",
+        "maCX": "CX03",
+        "maXe": "XE03",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-01 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-01 13:00:00"
+      }
+    },
+    "veXe:VE16": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE16",
+        "maKH": "KH16",
+        "maLC": "LC16",
+        "maGhe": "GHE16",
+        "maHD": "HD16",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "chuyenXe:CX01": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCX": "CX01",
+        "maXe": "XE01",
+        "diemDi": "Hồ Chí Minh",
+        "diemDen": "Đà Lạt",
+        "quangDuong": "310km",
+        "giaChuyenXe": "600000"
+      }
+    },
+    "nhanVien:NV03": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV03",
+        "hoTen": "Trần Mỹ Hạnh",
+        "email": "hanh.tm@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000003",
+        "CCCD": "048193000003",
+        "diaChi": "Đà Nẵng",
+        "maCV": "CV02"
+      }
+    },
+    "xe:XE03": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maXe": "XE03",
+        "bienSoXe": "59B-34567",
+        "soChoNgoi": "34",
+        "loaiXe": "Limousine"
+      }
+    },
+    "chuyenXe:CX02": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCX": "CX02",
+        "maXe": "XE02",
+        "diemDi": "Hồ Chí Minh",
+        "diemDen": "Nha Trang",
+        "quangDuong": "250",
+        "giaChuyenXe": "200000"
+      }
+    },
+    "hoaDon:HD11": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD11",
+        "maKH": "KH11",
+        "maNV": "NV03",
+        "ngayLap": "2025-11-04",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "lichChay:LC09": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC09",
+        "maCX": "CX09",
+        "maXe": "XE09",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-03 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-03 13:00:00"
+      }
+    },
+    "index:email:truongduchuy.1903@gmail.com": {
+      "type": "string",
+      "ttl": -1,
+      "value": "S0gwMQ=="
+    },
+    "khachHang:KH06": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH06",
+        "hoTen": "Đỗ Thị Mai",
+        "email": "mai.dt@gmail.com",
+        "password": "123456",
+        "SDT": "0987654306",
+        "CCCD": "079200000006",
+        "diaChi": "Q7, TP.HCM"
+      }
+    },
+    "chuyenXe:CX05": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCX": "CX05",
+        "maXe": "XE05",
+        "diemDi": "Đà Lạt",
+        "diemDen": "Nha Trang"
+      }
+    },
+    "veXe:VE03": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE03",
+        "maKH": "KH03",
+        "maLC": "LC03",
+        "maGhe": "GHE03",
+        "maHD": "HD03",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "veXe:VE06": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE06",
+        "maKH": "KH06",
+        "maLC": "LC06",
+        "maGhe": "GHE06",
+        "maHD": "HD06",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "lichChay:LC14": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC14",
+        "maCX": "CX14",
+        "maXe": "XE14",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-05 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-05 13:00:00"
+      }
+    },
+    "khachHang:KH16": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH16",
+        "hoTen": "Mai Phương Thúy",
+        "email": "thuy.mp@gmail.com",
+        "password": "123456",
+        "SDT": "0987654316",
+        "CCCD": "079200000016",
+        "diaChi": "Nhà Bè, TP.HCM"
+      }
+    },
+    "gheNgoi:GHE23": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE23",
+        "maXe": "XE01",
+        "tenGhe": "A23"
+      }
+    },
+    "nhanVien:NV20": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV20",
+        "hoTen": "Trịnh Văn Sơn",
+        "email": "son.tv@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000020",
+        "CCCD": "083094000020",
+        "diaChi": "Sóc Trăng",
+        "maCV": "CV03"
+      }
+    },
+    "gheNgoi:GHE19": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE19",
+        "maXe": "XE01",
+        "tenGhe": "A19"
+      }
+    },
+    "veXe:VE17": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE17",
+        "maKH": "KH17",
+        "maLC": "LC17",
+        "maGhe": "GHE17",
+        "maHD": "HD17",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "veXe:VE02": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE02",
+        "maKH": "KH02",
+        "maLC": "LC02",
+        "maGhe": "GHE02",
+        "maHD": "HD02",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "gheNgoi:GHE31": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE31",
+        "maXe": "XE01",
+        "tenGhe": "A31"
+      }
+    },
+    "hoaDon:HD14": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD14",
+        "maKH": "KH14",
+        "maNV": "NV03",
+        "ngayLap": "2025-11-05",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "khachHang:KH12": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH12",
+        "hoTen": "Ngô Thanh Vân",
+        "email": "van.nt@gmail.com",
+        "password": "123456",
+        "SDT": "0987654312",
+        "CCCD": "079200000012",
+        "diaChi": "Q12, TP.HCM"
+      }
+    },
+    "gheNgoi:GHE34": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE34",
+        "maXe": "XE01",
+        "tenGhe": "A34"
+      }
+    },
+    "veXe:VE19": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE19",
+        "maKH": "KH19",
+        "maLC": "LC19",
+        "maGhe": "GHE19",
+        "maHD": "HD19",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "khachHang:KH10": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH10",
+        "hoTen": "Phan Thị Kim Dung",
+        "email": "dung.ptk@gmail.com",
+        "password": "123456",
+        "SDT": "0987654310",
+        "CCCD": "079200000010",
+        "diaChi": "Q5, TP.HCM"
+      }
+    },
+    "lichChay:LC19": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC19",
+        "maCX": "CX19",
+        "maXe": "XE19",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-06 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-06 13:00:00"
+      }
+    },
+    "nhanVien:NV08": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV08",
+        "hoTen": "Người đàn ông được bao nuôi",
+        "email": "dat.bm@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000008",
+        "CCCD": "075082000008",
+        "diaChi": "Đồng Nai",
+        "maCV": "CV03"
+      }
+    },
+    "khachHang:KH20": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH20",
+        "hoTen": "Đàm Vĩnh Hưng",
+        "email": "hung.dvinh@gmail.com",
+        "password": "123456",
+        "SDT": "0987654320",
+        "CCCD": "079200000020",
+        "diaChi": "Long An"
+      }
+    },
+    "gheNgoi:GHE07": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE07",
+        "maXe": "XE01",
+        "tenGhe": "A07"
+      }
+    },
+    "lichChay:LC10": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC10",
+        "maCX": "CX10",
+        "maXe": "XE10",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-03 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-03 13:00:00"
+      }
+    },
+    "chuyenXe:CX04": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCX": "CX04",
+        "maXe": "XE04",
+        "diemDi": "Đà Lạt",
+        "diemDen": "Hồ Chí Minh"
+      }
+    },
+    "chuyenXe:CX09": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCX": "CX09",
+        "maXe": "XE09",
+        "diemDi": "Đắk Lắk",
+        "diemDen": "Đà Lạt"
+      }
+    },
+    "veXe:VE10": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE10",
+        "maKH": "KH10",
+        "maLC": "LC10",
+        "maGhe": "GHE10",
+        "maHD": "HD10",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "khachHang:KH13": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH13",
+        "hoTen": "Lý Hải",
+        "email": "hai.ly@gmail.com",
+        "password": "123456",
+        "SDT": "0987654313",
+        "CCCD": "079200000013",
+        "diaChi": "Hóc Môn, TP.HCM"
+      }
+    },
+    "gheNgoi:GHE17": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE17",
+        "maXe": "XE01",
+        "tenGhe": "A17"
+      }
+    },
+    "chuyenXe:CX03": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCX": "CX03",
+        "maXe": "XE03",
+        "diemDi": "Hồ Chí Minh",
+        "diemDen": "Đắk Lắk",
+        "quangDuong": "200",
+        "giaChuyenXe": "120000"
+      }
+    },
+    "gheNgoi:GHE20": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE20",
+        "maXe": "XE01",
+        "tenGhe": "A20"
+      }
+    },
+    "gheNgoi:GHE13": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE13",
+        "maXe": "XE01",
+        "tenGhe": "A13"
+      }
+    },
+    "khachHang:KH09": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH09",
+        "hoTen": "Đặng Văn Hùng",
+        "email": "hung.dv@gmail.com",
+        "password": "123456",
+        "SDT": "0987654309",
+        "CCCD": "079200000009",
+        "diaChi": "Q10, TP.HCM"
+      }
+    },
+    "veXe:VE14": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE14",
+        "maKH": "KH14",
+        "maLC": "LC14",
+        "maGhe": "GHE14",
+        "maHD": "HD14",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "lichChay:LC17": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC17",
+        "maCX": "CX17",
+        "maXe": "XE17",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-06 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-06 13:00:00"
+      }
+    },
+    "xe:XE02": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maXe": "XE02",
+        "bienSoXe": "59B-23456",
+        "soChoNgoi": "34",
+        "loaiXe": "Limousine"
+      }
+    },
+    "gheNgoi:GHE16": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE16",
+        "maXe": "XE01",
+        "tenGhe": "A16"
+      }
+    },
+    "veXe:VE04": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE04",
+        "maKH": "KH04",
+        "maLC": "LC04",
+        "maGhe": "GHE04",
+        "maHD": "HD04",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "lichChay:LC18": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC18",
+        "maCX": "CX18",
+        "maXe": "XE18",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-06 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-06 13:00:00"
+      }
+    },
+    "gheNgoi:GHE08": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE08",
+        "maXe": "XE01",
+        "tenGhe": "A08"
+      }
+    },
+    "lichChay:LC06": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC06",
+        "maCX": "CX06",
+        "maXe": "XE06",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-02 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-02 13:00:00"
+      }
+    },
+    "gheNgoi:GHE25": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE25",
+        "maXe": "XE01",
+        "tenGhe": "A25"
+      }
+    },
+    "nhanVien:NV19": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV19",
+        "hoTen": "Trương Thế Vinh",
+        "email": "vinh.tt@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000019",
+        "CCCD": "094093000019",
+        "diaChi": "Bạc Liêu",
+        "maCV": "CV03"
+      }
+    },
+    "nhanVien:NV12": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV12",
+        "hoTen": "Lý Hoàng Nam",
+        "email": "nam.lh@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000012",
+        "CCCD": "082086000012",
+        "diaChi": "Tiền Giang",
+        "maCV": "CV03"
+      }
+    },
+    "chuyenXe:CX07": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCX": "CX07",
+        "maXe": "XE07",
+        "diemDi": "Đắk Lắk",
+        "diemDen": "Hồ Chí Minh"
+      }
+    },
+    "lichChay:LC08": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC08",
+        "maCX": "CX08",
+        "maXe": "XE08",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-03 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-03 13:00:00"
+      }
+    },
+    "nhanVien:NV16": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV16",
+        "hoTen": "Mai Văn Dũng",
+        "email": "dung.mv@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000016",
+        "CCCD": "089090000016",
+        "diaChi": "An Giang",
+        "maCV": "CV03"
+      }
+    },
+    "nhanVien:NV02": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV02",
+        "hoTen": "Vũ Khánh An",
+        "email": "ngan.ltt@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000002",
+        "CCCD": "048192000002",
+        "diaChi": "Đà Nẵng",
+        "maCV": "CV02"
+      }
+    },
+    "gheNgoi:GHE10": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE10",
+        "maXe": "XE01",
+        "tenGhe": "A10"
+      }
+    },
+    "khachHang:KH08": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH08",
+        "hoTen": "Bùi Phương Thảo",
+        "email": "thao.bp@gmail.com",
+        "password": "123456",
+        "SDT": "0987654308",
+        "CCCD": "079200000008",
+        "diaChi": "Phú Nhuận, TP.HCM"
+      }
+    },
+    "hoaDon:HD16": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD16",
+        "maKH": "KH16",
+        "maNV": "NV02",
+        "ngayLap": "2025-11-05",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "gheNgoi:GHE24": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE24",
+        "maXe": "XE01",
+        "tenGhe": "A24"
+      }
+    },
+    "hoaDon:HD02": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD02",
+        "maKH": "KH02",
+        "maNV": "NV03",
+        "ngayLap": "2025-11-01",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "veXe:VE20": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE20",
+        "maKH": "KH20",
+        "maLC": "LC20",
+        "maGhe": "GHE20",
+        "maHD": "HD20",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "nhanVien:NV15": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV15",
+        "hoTen": "Lâm Quang Huy",
+        "email": "huy.lq@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000015",
+        "CCCD": "087089000015",
+        "diaChi": "Đồng Tháp",
+        "maCV": "CV03"
+      }
+    },
+    "lichChay:LC12": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC12",
+        "maCX": "CX12",
+        "maXe": "XE12",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-04 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-04 13:00:00"
+      }
+    },
+    "nhanVien:NV07": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV07",
+        "hoTen": "Phú Lé",
+        "email": "hung.dq@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000007",
+        "CCCD": "079081000007",
+        "diaChi": "TP. Hồ Chí Minh",
+        "maCV": "CV03"
+      }
+    },
+    "hoaDon:HD06": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD06",
+        "maKH": "KH06",
+        "maNV": "NV04",
+        "ngayLap": "2025-11-02",
+        "tongTien": "300000",
+        "phuongThucThanhToan": "Momo"
+      }
+    },
+    "gheNgoi:GHE04": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE04",
+        "maXe": "XE01",
+        "tenGhe": "A04"
+      }
+    },
+    "hoaDon:HD20": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD20",
+        "maKH": "KH20",
+        "maNV": "NV03",
+        "ngayLap": "2025-11-06",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Momo"
+      }
+    },
+    "veXe:VE09": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE09",
+        "maKH": "KH09",
+        "maLC": "LC09",
+        "maGhe": "GHE09",
+        "maHD": "HD09",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "gheNgoi:GHE09": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE09",
+        "maXe": "XE01",
+        "tenGhe": "A09"
+      }
+    },
+    "hoaDon:HD13": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD13",
+        "maKH": "KH13",
+        "maNV": "NV02",
+        "ngayLap": "2025-11-04",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "khachHang:KH07": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH07",
+        "hoTen": "Vũ Đức Đam",
+        "email": "dam.vd@gmail.com",
+        "password": "123456",
+        "SDT": "0987654307",
+        "CCCD": "079200000007",
+        "diaChi": "Tân Bình, TP.HCM"
+      }
+    },
+    "gheNgoi:GHE21": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE21",
+        "maXe": "XE01",
+        "tenGhe": "A21"
+      }
+    },
+    "gheNgoi:GHE14": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE14",
+        "maXe": "XE01",
+        "tenGhe": "A14"
+      }
+    },
+    "chucVu:CV01": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCV": "CV01",
+        "tenChucVu": "Admin",
+        "moTa": "QTV hệ thống"
+      }
+    },
+    "gheNgoi:GHE29": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE29",
+        "maXe": "XE01",
+        "tenGhe": "A29"
+      }
+    },
+    "khachHang:KH04": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH04",
+        "hoTen": "Nguyễn Thùy Linh",
+        "email": "linh.nt@gmail.com",
+        "password": "123456",
+        "SDT": "0987654304",
+        "CCCD": "079200000004",
+        "diaChi": "Bình Thạnh, TP.HCM"
+      }
+    },
+    "hoaDon:HD04": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD04",
+        "maKH": "KH04",
+        "maNV": "NV02",
+        "ngayLap": "2025-11-01",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "ZaloPay"
+      }
+    },
+    "khachHang:KH15": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH15",
+        "hoTen": "Tạ Bích Loan",
+        "email": "loan.tb@gmail.com",
+        "password": "123456",
+        "SDT": "0987654315",
+        "CCCD": "079200000015",
+        "diaChi": "Bình Chánh, TP.HCM"
+      }
+    },
+    "nhanVien:NV17": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV17",
+        "hoTen": "Cao Minh Triết",
+        "email": "triet.cm@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000017",
+        "CCCD": "091091000017",
+        "diaChi": "Kiên Giang",
+        "maCV": "CV03"
+      }
+    },
+    "xe:XE01": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maXe": "XE01",
+        "bienSoXe": "59B-12345",
+        "soChoNgoi": "34",
+        "loaiXe": "Limousine"
+      }
+    },
+    "veXe:VE07": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE07",
+        "maKH": "KH07",
+        "maLC": "LC07",
+        "maGhe": "GHE07",
+        "maHD": "HD07",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "gheNgoi:Sold:LC01": {
+      "type": "set",
+      "ttl": -1,
+      "value": [
+        "A01"
+      ]
+    },
+    "khachHang:KH18": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH18",
+        "hoTen": "Lâm Chí Khanh",
+        "email": "khanh.lc@gmail.com",
+        "password": "123456",
+        "SDT": "0987654318",
+        "CCCD": "079200000018",
+        "diaChi": "Đồng Nai"
+      }
+    },
+    "khachHang:KH01": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH01",
+        "hoTen": "Nguyễn Phương Ngân",
+        "email": "pngan3331@gmail.com",
+        "password": "123456",
+        "SDT": "0987654301",
+        "CCCD": "079200000001",
+        "diaChi": "Q1, TP.HCM"
+      }
+    },
+    "lichChay:LC16": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC16",
+        "maCX": "CX16",
+        "maXe": "XE16",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-05 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-05 13:00:00"
+      }
+    },
+    "hoaDon:HD18": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD18",
+        "maKH": "KH18",
+        "maNV": "NV04",
+        "ngayLap": "2025-11-06",
+        "tongTien": "300000",
+        "phuongThucThanhToan": "ZaloPay"
+      }
+    },
+    "lichChay:LC02": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC02",
+        "maCX": "CX02",
+        "maXe": "XE02",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-01 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-01 13:00:00"
+      }
+    },
+    "nhanVien:NV09": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV09",
+        "hoTen": "Đỗ Văn Tuấn",
+        "email": "tuan.dv@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000009",
+        "CCCD": "074083000009",
+        "diaChi": "Bình Dương",
+        "maCV": "CV03"
+      }
+    },
+    "veXe:VE18": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE18",
+        "maKH": "KH18",
+        "maLC": "LC18",
+        "maGhe": "GHE18",
+        "maHD": "HD18",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "khachHang:KH11": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH11",
+        "hoTen": "Trương Tấn Sang",
+        "email": "sang.tt@gmail.com",
+        "password": "123456",
+        "SDT": "0987654311",
+        "CCCD": "079200000011",
+        "diaChi": "Bình Tân, TP.HCM"
+      }
+    },
+    "khachHang:KH02": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH02",
+        "hoTen": "Trần Thị Ngọc Hà",
+        "email": "ha.ttn@gmail.com",
+        "password": "123456",
+        "SDT": "0987654302",
+        "CCCD": "079200000002",
+        "diaChi": "Q3, TP.HCM"
+      }
+    },
+    "lichChay:LC13": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC13",
+        "maCX": "CX13",
+        "maXe": "XE13",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-04 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-04 13:00:00"
+      }
+    },
+    "lichChay:LC11": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC11",
+        "maCX": "CX11",
+        "maXe": "XE11",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-04 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-04 13:00:00"
+      }
+    },
+    "gheNgoi:GHE02": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE02",
+        "maXe": "XE01",
+        "tenGhe": "A02"
+      }
+    },
+    "nhanVien:NV14": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV14",
+        "hoTen": "Đinh Văn Hậu",
+        "email": "hau.dv@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000014",
+        "CCCD": "086088000014",
+        "diaChi": "Vĩnh Long",
+        "maCV": "CV03"
+      }
+    },
+    "chuyenXe:CX08": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCX": "CX08",
+        "maXe": "XE08",
+        "diemDi": "Đắk Lắk",
+        "diemDen": "Nha Trang"
+      }
+    },
+    "gheNgoi:GHE28": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE28",
+        "maXe": "XE01",
+        "tenGhe": "A28"
+      }
+    },
+    "veXe:VE01": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE01",
+        "maKH": "KH01",
+        "maLC": "LC01",
+        "maGhe": "GHE01",
+        "maHD": "HD01",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "veXe:VE15": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE15",
+        "maKH": "KH15",
+        "maLC": "LC15",
+        "maGhe": "GHE15",
+        "maHD": "HD15",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "veXe:VE12": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE12",
+        "maKH": "KH12",
+        "maLC": "LC12",
+        "maGhe": "GHE12",
+        "maHD": "HD12",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "chuyenXe:CX06": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maCX": "CX06",
+        "maXe": "XE06",
+        "diemDi": "Đà Lạt",
+        "diemDen": "Đắk Lắk"
+      }
+    },
+    "hoaDon:HD12": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD12",
+        "maKH": "KH12",
+        "maNV": "NV04",
+        "ngayLap": "2025-11-04",
+        "tongTien": "300000",
+        "phuongThucThanhToan": "ZaloPay"
+      }
+    },
+    "gheNgoi:GHE12": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE12",
+        "maXe": "XE01",
+        "tenGhe": "A12"
+      }
+    },
+    "hoaDon:HD08": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD08",
+        "maKH": "KH08",
+        "maNV": "NV03",
+        "ngayLap": "2025-11-03",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "gheNgoi:GHE06": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE06",
+        "maXe": "XE01",
+        "tenGhe": "A06"
+      }
+    },
+    "gheNgoi:GHE15": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE15",
+        "maXe": "XE01",
+        "tenGhe": "A15"
+      }
+    },
+    "lichChay:LC15": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maLC": "LC15",
+        "maCX": "CX15",
+        "maXe": "XE15",
+        "tanSuat": "Daily",
+        "thoiGianXuatBen": "2025-11-05 08:00:00",
+        "thoiGianChay": "5h",
+        "thoiGianDenDuKien": "2025-11-05 13:00:00"
+      }
+    },
+    "khachHang:KH19": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH19",
+        "hoTen": "Hồ Ngọc Hà",
+        "email": "ha.hng@gmail.com",
+        "password": "123456",
+        "SDT": "0987654319",
+        "CCCD": "079200000019",
+        "diaChi": "Bình Dương"
+      }
+    },
+    "veXe:VE08": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE08",
+        "maKH": "KH08",
+        "maLC": "LC08",
+        "maGhe": "GHE08",
+        "maHD": "HD08",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "index:email:pngan3331@gmail.com": {
+      "type": "string",
+      "ttl": -1,
+      "value": "S0gwMQ=="
+    },
+    "hoaDon:HD19": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD19",
+        "maKH": "KH19",
+        "maNV": "NV02",
+        "ngayLap": "2025-11-06",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "gheNgoi:GHE01": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maGhe": "GHE01",
+        "maXe": "XE01",
+        "tenGhe": "A01"
+      }
+    },
+    "veXe:VE05": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maVe": "VE05",
+        "maKH": "KH05",
+        "maLC": "LC05",
+        "maGhe": "GHE05",
+        "maHD": "HD05",
+        "trangThai": "Đã thanh toán"
+      }
+    },
+    "khachHang:KH14": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH14",
+        "hoTen": "Dương Minh Tuyền",
+        "email": "tuyen.dm@gmail.com",
+        "password": "123456",
+        "SDT": "0987654314",
+        "CCCD": "079200000014",
+        "diaChi": "Củ Chi, TP.HCM"
+      }
+    },
+    "hoaDon:HD07": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD07",
+        "maKH": "KH07",
+        "maNV": "NV02",
+        "ngayLap": "2025-11-02",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Banking"
+      }
+    },
+    "gheNgoi:Total:LC01": {
+      "type": "set",
+      "ttl": -1,
+      "value": [
+        "A02",
+        "A06",
+        "A04",
+        "A08",
+        "A10",
+        "A09",
+        "A01",
+        "A05",
+        "A07",
+        "A03"
+      ]
+    },
+    "nhanVien:NV06": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maNV": "NV06",
+        "hoTen": "Hứa Hương Hân",
+        "email": "tai.vt@nhaxe.com",
+        "password": "123456",
+        "SDT": "0901000006",
+        "CCCD": "079080000006",
+        "diaChi": "TP. Hồ Chí Minh",
+        "maCV": "CV03"
+      }
+    },
+    "hoaDon:HD01": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maHD": "HD01",
+        "maKH": "KH01",
+        "maNV": "NV02",
+        "ngayLap": "2025-11-01",
+        "tongTien": "250000",
+        "phuongThucThanhToan": "Momo"
+      }
+    },
+    "khachHang:KH03": {
+      "type": "hash",
+      "ttl": -1,
+      "value": {
+        "maKH": "KH03",
+        "hoTen": "Lê Văn Sơn",
+        "email": "son.lv@gmail.com",
+        "password": "123456",
+        "SDT": "0987654303",
+        "CCCD": "079200000003",
+        "diaChi": "Thủ Đức, TP.HCM"
+      }
+    }
+  }
+}

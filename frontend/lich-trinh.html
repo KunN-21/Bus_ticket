@@ -674,27 +674,5 @@
     <script src="assets/scripts/core/toast.js"></script>
     <script src="scripts/lich-trinh.js"></script>
     <script src="assets/scripts/core/main.js"></script>
-    
-    <script>
-        // Add reset button functionality inline
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check if form exists
-            const bookingForm = document.getElementById('bookingForm');
-            if (bookingForm) {
-                // Add reset button to form if not exists
-                const searchBtn = bookingForm.querySelector('.btn-search');
-                if (searchBtn && !document.querySelector('.btn-reset-inline')) {
-                    const resetBtn = document.createElement('button');
-                    resetBtn.type = 'button';
-                    resetBtn.className = 'btn-search btn-reset-inline';
-                    resetBtn.textContent = '🔄 Đặt lại';
-                    resetBtn.style.marginLeft = '10px';
-                    resetBtn.style.background = '#6c757d';
-                    resetBtn.onclick = resetFilter;
-                    searchBtn.parentNode.appendChild(resetBtn);
-                }
-            }
-        });
-    </script>
 </body>
 </html>

@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const diemDi = urlParams.get('from');
     const diemDen = urlParams.get('to');
     const ngayDi = urlParams.get('date');
+    const maTuyenXe = urlParams.get('maTuyenXe'); // Get specific route if provided
 
     if (!diemDi || !diemDen || !ngayDi) {
         showNoResults();
@@ -23,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     searchDate = ngayDi;
-    await searchRoutes(diemDi, diemDen, ngayDi);
+    await searchRoutes(diemDi, diemDen, ngayDi, maTuyenXe);
 });
 
 // Filter by time function
@@ -69,7 +70,7 @@ function filterByTime() {
 }
 
 // Search routes
-async function searchRoutes(diemDi, diemDen, ngayDi) {
+async function searchRoutes(diemDi, diemDen, ngayDi, maTuyenXe = null) {
     try {
         const response = await fetch(`${API_URL}/routes/search`, {
             method: 'POST',
@@ -87,7 +88,17 @@ async function searchRoutes(diemDi, diemDen, ngayDi) {
             throw new Error('Search failed');
         }
 
-        const routes = await response.json();
+        let routes = await response.json();
+        
+        // If specific maTuyenXe provided, filter to show only that route
+        if (maTuyenXe) {
+            const specificRoute = routes.find(r => r.maTuyenXe === maTuyenXe);
+            if (specificRoute) {
+                routes = [specificRoute];
+                console.log('🎯 Đã chọn tuyến xe cụ thể:', maTuyenXe);
+            }
+        }
+        
         allRoutes = routes; // Store all routes
         filteredRoutes = routes;
         displayResults(routes);

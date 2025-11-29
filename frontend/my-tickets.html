@@ -348,26 +348,418 @@
     </div>
   </footer>
 
+  <!-- Cancel Ticket Modal -->
+  <div class="cancel-modal-overlay" id="cancelModal">
+    <div class="cancel-modal">
+      <div class="cancel-modal-header">
+        <h3>🎫 Yêu cầu hủy vé</h3>
+        <button class="cancel-modal-close" onclick="closeCancelModal()">✕</button>
+      </div>
+      <div class="cancel-modal-body">
+        <div class="ticket-info-summary" id="cancelTicketInfo"></div>
+        
+        <div class="cancel-policy">
+          <h4>📋 Chính sách hủy vé</h4>
+          <ul>
+            <li><strong>Hủy trước 24h:</strong> Hoàn 80% giá vé</li>
+            <li><strong>Hủy trước 12h:</strong> Hoàn 50% giá vé</li>
+            <li><strong>Hủy trước 6h:</strong> Hoàn 30% giá vé</li>
+            <li><strong>Hủy dưới 6h:</strong> Không hoàn tiền</li>
+          </ul>
+        </div>
+        
+        <form id="cancelForm">
+          <div class="form-group">
+            <label for="cancelReason">Lý do hủy vé <span class="required">*</span></label>
+            <select id="cancelReason" required>
+              <option value="">-- Chọn lý do --</option>
+              <option value="change_schedule">Thay đổi lịch trình cá nhân</option>
+              <option value="health_issue">Vấn đề sức khỏe</option>
+              <option value="duplicate_booking">Đặt vé trùng lặp</option>
+              <option value="wrong_info">Nhập sai thông tin chuyến</option>
+              <option value="emergency">Việc khẩn cấp</option>
+              <option value="other">Lý do khác</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="otherReasonGroup" style="display: none;">
+            <label for="otherReason">Mô tả lý do <span class="required">*</span></label>
+            <textarea id="otherReason" rows="3" placeholder="Vui lòng mô tả chi tiết lý do hủy vé..."></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="cancelNote">Ghi chú thêm (không bắt buộc)</label>
+            <textarea id="cancelNote" rows="2" placeholder="Thông tin bổ sung nếu có..."></textarea>
+          </div>
+          
+          <div class="refund-estimate" id="refundEstimate"></div>
+        </form>
+      </div>
+      <div class="cancel-modal-footer">
+        <button class="btn btn-secondary" onclick="closeCancelModal()">Đóng</button>
+        <button class="btn btn-cancel-submit" onclick="submitCancelRequest()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Gửi yêu cầu hủy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticket Detail Modal -->
+  <div class="detail-modal-overlay" id="detailModal">
+    <div class="detail-modal">
+      <div class="detail-modal-header">
+        <h3>🎫 Chi tiết vé xe</h3>
+        <button class="detail-modal-close" onclick="closeDetailModal()">✕</button>
+      </div>
+      <div class="detail-modal-body" id="detailModalBody">
+        <!-- Content will be loaded dynamically -->
+      </div>
+      <div class="detail-modal-footer">
+        <button class="btn btn-secondary" onclick="closeDetailModal()">Đóng</button>
+        <button class="btn btn-print" onclick="printTicket()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          In vé
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Cancel Modal Styles */
+    .cancel-modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .cancel-modal-overlay.active { display: flex; }
+    .cancel-modal {
+      background: white;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: modalSlideIn 0.3s ease;
+    }
+    @keyframes modalSlideIn {
+      from { transform: translateY(-30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .cancel-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      background: linear-gradient(135deg, #FF6600 0%, #FF8C42 100%);
+      color: white;
+    }
+    .cancel-modal-header h3 { margin: 0; font-size: 20px; }
+    .cancel-modal-close {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s;
+    }
+    .cancel-modal-close:hover { background: rgba(255,255,255,0.3); }
+    .cancel-modal-body {
+      padding: 24px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .ticket-info-summary {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .ticket-info-summary h4 { margin: 0 0 12px 0; color: #333; }
+    .ticket-info-summary p { margin: 6px 0; color: #666; font-size: 14px; }
+    .ticket-info-summary strong { color: #333; }
+    .cancel-policy {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .cancel-policy h4 { margin: 0 0 12px 0; color: #e65100; }
+    .cancel-policy ul { margin: 0; padding-left: 20px; }
+    .cancel-policy li { margin: 6px 0; color: #666; font-size: 13px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #333;
+    }
+    .form-group .required { color: #f44336; }
+    .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'Poppins', sans-serif;
+      transition: border-color 0.2s;
+    }
+    .form-group select:focus, .form-group textarea:focus {
+      border-color: #FF6600;
+      outline: none;
+    }
+    .refund-estimate {
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .refund-estimate h4 { margin: 0 0 8px 0; color: #2e7d32; }
+    .refund-estimate p { margin: 0; color: #1b5e20; font-size: 24px; font-weight: 700; }
+    .refund-estimate .note { font-size: 12px; color: #666; margin-top: 8px; }
+    .cancel-modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 16px 24px;
+      border-top: 1px solid #eee;
+      background: #fafafa;
+    }
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+    .btn-secondary:hover { background: #d0d0d0; }
+    .btn-cancel-submit {
+      background: linear-gradient(135deg, #FF6600 0%, #FF8C42 100%);
+      color: white;
+    }
+    .btn-cancel-submit:hover {
+      background: linear-gradient(135deg, #e55c00 0%, #e57a38 100%);
+    }
+    .status-cancel-pending { background: #9c27b0; color: white; }
+    
+    /* Detail Modal Styles */
+    .detail-modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .detail-modal-overlay.active { display: flex; }
+    .detail-modal {
+      background: white;
+      border-radius: 20px;
+      width: 95%;
+      max-width: 650px;
+      max-height: 90vh;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: modalSlideIn 0.3s ease;
+    }
+    .detail-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 28px;
+      background: linear-gradient(135deg, #FF6600 0%, #FF8C42 100%);
+      color: white;
+    }
+    .detail-modal-header h3 { margin: 0; font-size: 22px; font-weight: 700; }
+    .detail-modal-close {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      transition: all 0.2s;
+    }
+    .detail-modal-close:hover { background: rgba(255,255,255,0.3); }
+    .detail-modal-body {
+      padding: 28px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .detail-modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 20px 28px;
+      border-top: 1px solid #eee;
+      background: #fafafa;
+    }
+    .btn-print {
+      background: #1976d2;
+      color: white;
+    }
+    .btn-print:hover { background: #1565c0; }
+    
+    /* Ticket Detail Card */
+    .ticket-detail-card {
+      background: #f8f9fa;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .ticket-detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px dashed #ddd;
+    }
+    .ticket-detail-code {
+      font-size: 24px;
+      font-weight: 700;
+      color: #FF6600;
+    }
+    .ticket-detail-status {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .ticket-route-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px 0;
+      margin-bottom: 20px;
+    }
+    .route-point {
+      text-align: center;
+    }
+    .route-point-label {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .route-point-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+    }
+    .route-arrow-big {
+      font-size: 28px;
+      color: #FF6600;
+    }
+    .ticket-info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .ticket-info-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .ticket-info-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #FF6600 0%, #FF8C42 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .ticket-info-content {
+      flex: 1;
+    }
+    .ticket-info-label {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 2px;
+    }
+    .ticket-info-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+    }
+    .ticket-info-value.price {
+      color: #FF6600;
+      font-size: 20px;
+    }
+    .ticket-qr-section {
+      text-align: center;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+    .ticket-qr-section h4 {
+      margin: 0 0 16px 0;
+      color: #333;
+    }
+    .ticket-qr-placeholder {
+      width: 150px;
+      height: 150px;
+      background: #f0f0f0;
+      border: 2px dashed #ddd;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      font-size: 60px;
+      color: #ccc;
+    }
+    
+    @media (max-width: 600px) {
+      .ticket-info-grid { grid-template-columns: 1fr; }
+      .ticket-route-display { flex-direction: column; gap: 10px; }
+      .route-arrow-big { transform: rotate(90deg); }
+    }
+  </style>
+
   <script src="assets/scripts/core/toast.js?v=2"></script>
   <script src="assets/scripts/core/main.js?v=2"></script>
   <script>
     const API_BASE_URL = 'http://localhost:8000';
+    let allTickets = [];
+    let currentCancelTicket = null;
 
-    const mockTickets = [
-      { maVe: 'VE001', route: 'TP.HCM - Hà Nội', seat: 'A12', departure: '2025-11-20T08:30:00', price: 850000, status: 'paid' },
-      { maVe: 'VE002', route: 'TP.HCM - Đà Nẵng', seat: 'B05', departure: '2025-11-22T14:00:00', price: 450000, status: 'pending' },
-      { maVe: 'VE003', route: 'Hà Nội - Hải Phòng', seat: 'C10', departure: '2025-11-15T10:00:00', price: 250000, status: 'cancelled' }
-    ];
-
-    function formatDateTime(dt) { 
-      const d = new Date(dt); 
-      return d.toLocaleString('vi-VN', {
+    function formatDateTime(dateStr, timeStr) {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      const formatted = date.toLocaleDateString('vi-VN', {
         year: 'numeric',
         month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }); 
+        day: '2-digit'
+      });
+      return timeStr ? `${formatted} ${timeStr}` : formatted;
     }
 
     function formatCurrency(amount) {
@@ -381,7 +773,9 @@
       const map = {
         'paid': { text: 'Đã thanh toán', class: 'status-paid' },
         'pending': { text: 'Chờ xử lý', class: 'status-pending' },
-        'cancelled': { text: 'Đã hủy', class: 'status-cancelled' }
+        'cancelled': { text: 'Đã hủy', class: 'status-cancelled' },
+        'cancel_pending': { text: 'Chờ duyệt hủy', class: 'status-cancel-pending' },
+        'refunded': { text: 'Đã hoàn tiền', class: 'status-cancelled' }
       };
       return map[status] || { text: status, class: 'status-pending' };
     }
@@ -400,16 +794,23 @@
       }
       
       el.innerHTML = tickets.map(t => {
-        const statusInfo = getStatusInfo(t.status);
+        const statusInfo = getStatusInfo(t.trangThai);
+        const seats = Array.isArray(t.soGheNgoi) ? t.soGheNgoi.join(', ') : t.soGheNgoi;
+        const route = t.routeInfo ? `${t.routeInfo.diemDi} - ${t.routeInfo.diemDen}` : (t.maTuyenXe || 'N/A');
+        
+        // Determine if cancel button should be shown
+        const canCancel = t.trangThai === 'paid';
+        const isCancelPending = t.trangThai === 'cancel_pending';
+        
         return `
           <div class="ticket-card">
             <div class="ticket-status-badge ${statusInfo.class}">${statusInfo.text}</div>
             <div class="ticket-header">
               <div>
-                <div class="ticket-route">${t.route}</div>
+                <div class="ticket-route">${route}</div>
                 <div class="ticket-meta">
-                  <span>🎫 Mã vé: <strong>${t.maVe}</strong></span>
-                  <span>💺 Ghế: <strong>${t.seat}</strong></span>
+                  <span>🎫 Mã vé: <strong>${t.maDatVe}</strong></span>
+                  <span>💺 Ghế: <strong>${seats}</strong></span>
                 </div>
               </div>
             </div>
@@ -418,35 +819,38 @@
                 <div class="detail-icon">📅</div>
                 <div class="detail-content">
                   <div class="detail-label">Ngày giờ khởi hành</div>
-                  <div class="detail-value">${formatDateTime(t.departure)}</div>
+                  <div class="detail-value">${formatDateTime(t.ngayDi, t.gioDi)}</div>
                 </div>
               </div>
               <div class="detail-item">
                 <div class="detail-icon">💰</div>
                 <div class="detail-content">
                   <div class="detail-label">Giá vé</div>
-                  <div class="detail-value ticket-price">${formatCurrency(t.price)}</div>
+                  <div class="detail-value ticket-price">${formatCurrency(t.tongTien)}</div>
                 </div>
               </div>
             </div>
             <div class="ticket-actions">
-              <button class="btn btn-details" onclick="viewTicketDetails('${t.maVe}')">
+              <button class="btn btn-details" onclick="viewTicketDetails('${t.maDatVe}')">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
                 </svg>
                 Chi tiết
               </button>
-              ${t.status === 'cancelled' ? 
-                '<button disabled class="btn btn-cancel">Đã hủy</button>' : 
-                `<button class="btn btn-cancel" onclick="cancelTicket('${t.maVe}')">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="15" y1="9" x2="9" y2="15"></line>
-                    <line x1="9" y1="9" x2="15" y2="15"></line>
-                  </svg>
-                  Hủy vé
-                </button>`
+              ${isCancelPending ? 
+                '<button disabled class="btn btn-cancel" style="background: #9c27b0;">⏳ Đang chờ duyệt</button>' : 
+                (canCancel ? 
+                  `<button class="btn btn-cancel" onclick="openCancelModal('${t.maDatVe}')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    Hủy vé
+                  </button>` : 
+                  `<button disabled class="btn btn-cancel">${statusInfo.text}</button>`
+                )
               }
             </div>
           </div>
@@ -463,57 +867,311 @@
       }
       
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/tickets/me`, { 
+        const res = await fetch(`${API_BASE_URL}/api/v1/bookings/my-bookings`, { 
           headers: { 'Authorization': `Bearer ${token}` } 
         });
         
         if (!res.ok) { 
-          console.warn('Tickets endpoint not available, using mock data'); 
-          renderTickets(mockTickets); 
-          Toast.info('Hiển thị dữ liệu mẫu. Backend chưa sẵn sàng.');
-          return; 
+          if (res.status === 401) {
+            Toast.warning('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+            setTimeout(() => window.location.href = 'login_register.html', 1500);
+            return;
+          }
+          throw new Error('Failed to load tickets');
         }
         
         const data = await res.json();
-        renderTickets(data.tickets || data || []);
+        allTickets = data || [];
+        
+        // Load route info for each ticket
+        await loadRouteInfo();
+        
+        renderTickets(allTickets);
       } catch (err) { 
         console.error(err); 
-        Toast.error('Không thể tải vé. Hiển thị dữ liệu mẫu.'); 
-        renderTickets(mockTickets); 
+        Toast.error('Không thể tải vé. Vui lòng thử lại sau.'); 
+        renderTickets([]); 
       }
     }
 
-    function viewTicketDetails(maVe) { 
-      Toast.info(`Xem chi tiết vé: ${maVe}`, 'Thông tin vé'); 
+    async function loadRouteInfo() {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      
+      for (let ticket of allTickets) {
+        if (ticket.maTuyen || ticket.maTuyenXe) {
+          try {
+            const maTuyen = ticket.maTuyen || ticket.maTuyenXe;
+            const res = await fetch(`${API_BASE_URL}/routes/${maTuyen}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+              ticket.routeInfo = await res.json();
+            }
+          } catch (e) {
+            console.warn('Could not load route info for', ticket.maDatVe);
+          }
+        }
+      }
     }
 
-    async function cancelTicket(maVe) {
-      const confirmed = await Modal.confirm(
-        `Bạn có chắc muốn hủy vé ${maVe}? Hành động này không thể hoàn tác.`, 
-        'Xác nhận hủy vé', 
-        'warning'
-      );
+    function viewTicketDetails(maDatVe) { 
+      const ticket = allTickets.find(t => t.maDatVe === maDatVe);
+      if (!ticket) return;
       
-      if (!confirmed) return;
+      const route = ticket.routeInfo ? `${ticket.routeInfo.diemDi} - ${ticket.routeInfo.diemDen}` : 'N/A';
+      const diemDi = ticket.routeInfo ? ticket.routeInfo.diemDi : 'N/A';
+      const diemDen = ticket.routeInfo ? ticket.routeInfo.diemDen : 'N/A';
+      const seats = Array.isArray(ticket.soGheNgoi) ? ticket.soGheNgoi.join(', ') : ticket.soGheNgoi;
+      const statusInfo = getStatusInfo(ticket.trangThai);
+      
+      const modalBody = document.getElementById('detailModalBody');
+      modalBody.innerHTML = `
+        <div class="ticket-detail-card">
+          <div class="ticket-detail-header">
+            <div class="ticket-detail-code">${maDatVe}</div>
+            <div class="ticket-detail-status ${statusInfo.class}">${statusInfo.text}</div>
+          </div>
+          
+          <div class="ticket-route-display">
+            <div class="route-point">
+              <div class="route-point-label">Điểm đi</div>
+              <div class="route-point-name">${diemDi}</div>
+            </div>
+            <div class="route-arrow-big">→</div>
+            <div class="route-point">
+              <div class="route-point-label">Điểm đến</div>
+              <div class="route-point-name">${diemDen}</div>
+            </div>
+          </div>
+          
+          <div class="ticket-info-grid">
+            <div class="ticket-info-item">
+              <div class="ticket-info-icon">📅</div>
+              <div class="ticket-info-content">
+                <div class="ticket-info-label">Ngày khởi hành</div>
+                <div class="ticket-info-value">${formatDateTime(ticket.ngayDi, null)}</div>
+              </div>
+            </div>
+            <div class="ticket-info-item">
+              <div class="ticket-info-icon">🕐</div>
+              <div class="ticket-info-content">
+                <div class="ticket-info-label">Giờ xuất bến</div>
+                <div class="ticket-info-value">${ticket.gioDi || 'N/A'}</div>
+              </div>
+            </div>
+            <div class="ticket-info-item">
+              <div class="ticket-info-icon">💺</div>
+              <div class="ticket-info-content">
+                <div class="ticket-info-label">Số ghế</div>
+                <div class="ticket-info-value">${seats}</div>
+              </div>
+            </div>
+            <div class="ticket-info-item">
+              <div class="ticket-info-icon">🎫</div>
+              <div class="ticket-info-content">
+                <div class="ticket-info-label">Số lượng vé</div>
+                <div class="ticket-info-value">${Array.isArray(ticket.soGheNgoi) ? ticket.soGheNgoi.length : 1} vé</div>
+              </div>
+            </div>
+            <div class="ticket-info-item">
+              <div class="ticket-info-icon">🚌</div>
+              <div class="ticket-info-content">
+                <div class="ticket-info-label">Loại xe</div>
+                <div class="ticket-info-value">${ticket.routeInfo?.xe?.loaiXe || ticket.loaiXe || 'Limousine'}</div>
+              </div>
+            </div>
+            <div class="ticket-info-item">
+              <div class="ticket-info-icon">💰</div>
+              <div class="ticket-info-content">
+                <div class="ticket-info-label">Tổng tiền</div>
+                <div class="ticket-info-value price">${formatCurrency(ticket.tongTien)}</div>
+              </div>
+            </div>
+          </div>
+          
+          ${ticket.ngayThanhToan ? `
+          <div class="ticket-info-grid" style="margin-top: 16px;">
+            <div class="ticket-info-item">
+              <div class="ticket-info-icon" style="background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);">✓</div>
+              <div class="ticket-info-content">
+                <div class="ticket-info-label">Ngày thanh toán</div>
+                <div class="ticket-info-value">${formatDateTime(ticket.ngayThanhToan, null)}</div>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+          
+          <div class="ticket-qr-section">
+            <h4>Mã QR vé điện tử</h4>
+            <div class="ticket-qr-placeholder">📱</div>
+            <p style="margin-top: 12px; color: #666; font-size: 13px;">Xuất trình mã này khi lên xe</p>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('detailModal').classList.add('active');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.remove('active');
+    }
+
+    function printTicket() {
+      window.print();
+      Toast.info('Đang chuẩn bị in vé...');
+    }
+
+    function openCancelModal(maDatVe) {
+      const ticket = allTickets.find(t => t.maDatVe === maDatVe);
+      if (!ticket) return;
+      
+      currentCancelTicket = ticket;
+      
+      const route = ticket.routeInfo ? `${ticket.routeInfo.diemDi} - ${ticket.routeInfo.diemDen}` : ticket.maTuyenXe;
+      const seats = Array.isArray(ticket.soGheNgoi) ? ticket.soGheNgoi.join(', ') : ticket.soGheNgoi;
+      
+      // Show ticket info
+      document.getElementById('cancelTicketInfo').innerHTML = `
+        <h4>Thông tin vé</h4>
+        <p><strong>Mã vé:</strong> ${ticket.maDatVe}</p>
+        <p><strong>Tuyến:</strong> ${route}</p>
+        <p><strong>Ngày khởi hành:</strong> ${formatDateTime(ticket.ngayDi, ticket.gioDi)}</p>
+        <p><strong>Ghế:</strong> ${seats}</p>
+        <p><strong>Tổng tiền:</strong> ${formatCurrency(ticket.tongTien)}</p>
+      `;
+      
+      // Calculate refund estimate
+      calculateRefund(ticket);
+      
+      // Reset form
+      document.getElementById('cancelForm').reset();
+      document.getElementById('otherReasonGroup').style.display = 'none';
+      
+      // Show modal
+      document.getElementById('cancelModal').classList.add('active');
+    }
+
+    function closeCancelModal() {
+      document.getElementById('cancelModal').classList.remove('active');
+      currentCancelTicket = null;
+    }
+
+    function calculateRefund(ticket) {
+      const departureDate = new Date(`${ticket.ngayDi}T${ticket.gioDi || '00:00'}`);
+      const now = new Date();
+      const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
+      
+      let refundPercent = 0;
+      let message = '';
+      
+      if (hoursUntilDeparture >= 24) {
+        refundPercent = 80;
+        message = 'Hủy trước 24 giờ - Hoàn 80%';
+      } else if (hoursUntilDeparture >= 12) {
+        refundPercent = 50;
+        message = 'Hủy trước 12 giờ - Hoàn 50%';
+      } else if (hoursUntilDeparture >= 6) {
+        refundPercent = 30;
+        message = 'Hủy trước 6 giờ - Hoàn 30%';
+      } else if (hoursUntilDeparture > 0) {
+        refundPercent = 0;
+        message = 'Hủy dưới 6 giờ - Không hoàn tiền';
+      } else {
+        refundPercent = 0;
+        message = 'Chuyến xe đã khởi hành - Không thể hủy';
+      }
+      
+      const refundAmount = ticket.tongTien * refundPercent / 100;
+      
+      document.getElementById('refundEstimate').innerHTML = `
+        <h4>💵 Ước tính hoàn tiền</h4>
+        <p>${formatCurrency(refundAmount)}</p>
+        <div class="note">${message}</div>
+        ${refundPercent === 0 && hoursUntilDeparture <= 0 ? 
+          '<div style="color: #d32f2f; margin-top: 8px; font-weight: 500;">⚠️ Chuyến xe đã khởi hành, không thể hủy vé!</div>' : ''}
+      `;
+      
+      return { refundPercent, refundAmount, canCancel: hoursUntilDeparture > 0 };
+    }
+
+    // Show/hide other reason textarea
+    document.getElementById('cancelReason').addEventListener('change', function() {
+      const otherGroup = document.getElementById('otherReasonGroup');
+      if (this.value === 'other') {
+        otherGroup.style.display = 'block';
+        document.getElementById('otherReason').required = true;
+      } else {
+        otherGroup.style.display = 'none';
+        document.getElementById('otherReason').required = false;
+      }
+    });
+
+    async function submitCancelRequest() {
+      if (!currentCancelTicket) return;
+      
+      const reasonSelect = document.getElementById('cancelReason');
+      const otherReason = document.getElementById('otherReason').value.trim();
+      const note = document.getElementById('cancelNote').value.trim();
+      
+      if (!reasonSelect.value) {
+        Toast.warning('Vui lòng chọn lý do hủy vé');
+        return;
+      }
+      
+      if (reasonSelect.value === 'other' && !otherReason) {
+        Toast.warning('Vui lòng mô tả chi tiết lý do hủy vé');
+        return;
+      }
+      
+      // Check if departure has passed
+      const refundInfo = calculateRefund(currentCancelTicket);
+      if (!refundInfo.canCancel) {
+        Toast.error('Chuyến xe đã khởi hành, không thể hủy vé!');
+        return;
+      }
+      
+      const reasonLabels = {
+        'change_schedule': 'Thay đổi lịch trình cá nhân',
+        'health_issue': 'Vấn đề sức khỏe',
+        'duplicate_booking': 'Đặt vé trùng lặp',
+        'wrong_info': 'Nhập sai thông tin chuyến',
+        'emergency': 'Việc khẩn cấp',
+        'other': 'Lý do khác'
+      };
+      
+      const cancelData = {
+        maDatVe: currentCancelTicket.maDatVe,
+        lyDoHuy: reasonSelect.value,
+        lyDoHuyText: reasonSelect.value === 'other' ? otherReason : reasonLabels[reasonSelect.value],
+        ghiChu: note,
+        tienHoanDuKien: refundInfo.refundAmount,
+        phanTramHoan: refundInfo.refundPercent
+      };
       
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/tickets/${maVe}/cancel`, { 
-          method: 'POST', 
-          headers: { 'Authorization': `Bearer ${token}` } 
+        const res = await fetch(`${API_BASE_URL}/api/v1/bookings/cancel-request`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(cancelData)
         });
         
-        if (!res.ok) { 
-          const body = await res.json().catch(() => ({})); 
-          throw new Error(body.detail || 'Không thể hủy vé'); 
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.detail || 'Không thể gửi yêu cầu hủy vé');
         }
         
-        Toast.success('Hủy vé thành công!');
+        Toast.success('Yêu cầu hủy vé đã được gửi thành công! Vui lòng chờ admin duyệt.');
+        closeCancelModal();
         setTimeout(loadTickets, 800);
-      } catch (err) { 
-        console.error(err); 
-        Toast.error(err.message || 'Hủy vé thất bại. Vui lòng thử lại sau.'); 
+        
+      } catch (err) {
+        console.error(err);
+        Toast.error(err.message || 'Gửi yêu cầu thất bại. Vui lòng thử lại sau.');
       }
     }
 

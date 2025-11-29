@@ -8,6 +8,8 @@ from app.routes.admin_employees import router as admin_employees_router
 from app.routes.admin_customers import router as admin_customers_router
 from app.routes.roles import router as roles_router
 from app.routes.bookings import router as bookings_router
+from app.routes.admin_bookings import router as admin_bookings_router
+from app.routes.statistics import router as statistics_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -49,6 +51,8 @@ app.include_router(admin_customers_router)
 app.include_router(roles_router)
 app.include_router(routes_router)
 app.include_router(bookings_router)
+app.include_router(admin_bookings_router)
+app.include_router(statistics_router)
 
 @app.get("/")
 async def root():

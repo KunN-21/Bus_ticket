@@ -8,7 +8,51 @@ let filteredRoutes = [];
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAllRoutes();
     populateFilters();
+    setupTripTypeToggle();
+    setDefaultDate();
 });
+
+// Set default date to today
+function setDefaultDate() {
+    const dateInput = document.getElementById('filterDate');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+        dateInput.min = today; // Cannot select past dates
+    }
+    
+    const returnDateInput = document.getElementById('return-date');
+    if (returnDateInput) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        returnDateInput.min = tomorrow.toISOString().split('T')[0];
+    }
+}
+
+// Setup trip type toggle (one-way / round-trip)
+function setupTripTypeToggle() {
+    const tripOptions = document.querySelectorAll('input[name="tripType"]');
+    const returnDateGroup = document.querySelector('.return-date-group');
+    
+    tripOptions.forEach(option => {
+        option.addEventListener('change', function() {
+            // Update active class on labels
+            document.querySelectorAll('.trip-option').forEach(label => {
+                label.classList.remove('active');
+            });
+            this.parentElement.classList.add('active');
+            
+            // Show/hide return date
+            if (returnDateGroup) {
+                if (this.value === 'round-trip') {
+                    returnDateGroup.style.display = 'block';
+                } else {
+                    returnDateGroup.style.display = 'none';
+                }
+            }
+        });
+    });
+}
 
 // Swap locations function
 function swapLocations() {
@@ -20,6 +64,10 @@ function swapLocations() {
     toSelect.value = temp;
     
     console.log('🔄 Đã đổi chiều: ' + toSelect.value + ' → ' + fromSelect.value);
+    
+    if (typeof Toast !== 'undefined') {
+        Toast.info('Đã đổi chiều hành trình');
+    }
 }
 
 // Filter by time function
@@ -163,8 +211,60 @@ function applyFilter(event) {
     
     const from = document.getElementById('filterFrom').value;
     const to = document.getElementById('filterTo').value;
+    const date = document.getElementById('filterDate').value;
     const vehicle = document.getElementById('filterVehicle').value;
+    const tripType = document.querySelector('input[name="tripType"]:checked')?.value || 'one-way';
+    const returnDate = document.getElementById('return-date')?.value;
 
+    // Validate inputs
+    if (!from && !to && !date) {
+        // No filters, just filter the grid
+        filteredRoutes = allRoutes.filter(route => {
+            const matchVehicle = !vehicle || (route.xe && route.xe.loaiXe === vehicle);
+            return matchVehicle;
+        });
+        
+        const noResults = document.getElementById('noResults');
+        const routesGrid = document.getElementById('routesGrid');
+
+        if (filteredRoutes.length === 0) {
+            noResults.style.display = 'block';
+            routesGrid.innerHTML = '';
+        } else {
+            noResults.style.display = 'none';
+            filterByTime();
+        }
+        return;
+    }
+    
+    // If from and to are selected, redirect to search results
+    if (from && to) {
+        // Build query params
+        const params = new URLSearchParams();
+        params.set('from', from);
+        params.set('to', to);
+        
+        if (date) {
+            params.set('date', date);
+        } else {
+            params.set('date', new Date().toISOString().split('T')[0]);
+        }
+        
+        if (vehicle) {
+            params.set('vehicle', vehicle);
+        }
+        
+        if (tripType === 'round-trip' && returnDate) {
+            params.set('returnDate', returnDate);
+            params.set('tripType', 'round-trip');
+        }
+        
+        // Redirect to search results page
+        window.location.href = `search-results.html?${params.toString()}`;
+        return;
+    }
+    
+    // Otherwise just filter the grid
     filteredRoutes = allRoutes.filter(route => {
         const matchFrom = !from || route.diemDi === from;
         const matchTo = !to || route.diemDen === to;
@@ -179,38 +279,19 @@ function applyFilter(event) {
     if (filteredRoutes.length === 0) {
         noResults.style.display = 'block';
         routesGrid.innerHTML = '';
+        if (typeof Toast !== 'undefined') {
+            Toast.warning('Không tìm thấy tuyến xe phù hợp');
+        }
     } else {
         noResults.style.display = 'none';
         // Apply time filter if any checkbox is checked
         filterByTime();
+        if (typeof Toast !== 'undefined') {
+            Toast.success(`Tìm thấy ${filteredRoutes.length} tuyến xe`);
+        }
     }
 
     console.log(`🔍 Lọc: ${filteredRoutes.length}/${allRoutes.length} tuyến`);
-}
-
-// Reset filters
-function resetFilter() {
-    document.getElementById('filterFrom').value = '';
-    document.getElementById('filterTo').value = '';
-    document.getElementById('filterVehicle').value = '';
-    
-    const filterDate = document.getElementById('filterDate');
-    if (filterDate) {
-        filterDate.value = '';
-    }
-    
-    // Reset time filters
-    const timeCheckboxes = document.querySelectorAll('.time-option input[type="checkbox"]');
-    timeCheckboxes.forEach(cb => {
-        cb.checked = false;
-    });
-    
-    filteredRoutes = [...allRoutes];
-    displayRoutes(filteredRoutes);
-    
-    document.getElementById('noResults').style.display = 'none';
-    
-    console.log('🔄 Đã reset bộ lọc');
 }
 
 // Display routes in grid
@@ -372,11 +453,18 @@ function bookRoute(event, maTuyenXe) {
     sessionStorage.setItem('selectedRoute', JSON.stringify({
         from: route.diemDi,
         to: route.diemDen,
-        maTuyenXe: route.maTuyenXe
+        maTuyenXe: route.maTuyenXe,
+        thoiGianXuatBen: route.thoiGianXuatBen,
+        thoiGianDenDuKien: route.thoiGianDenDuKien,
+        giaVe: route.giaVe,
+        loaiXe: route.xe?.loaiXe || 'Limousine'
     }));
 
-    // Redirect to home page
-    window.location.href = 'index.html';
+    // Get today's date as default
+    const today = new Date().toISOString().split('T')[0];
+
+    // Redirect to search-results page with query params
+    window.location.href = `search-results.html?from=${encodeURIComponent(route.diemDi)}&to=${encodeURIComponent(route.diemDen)}&date=${today}&maTuyenXe=${route.maTuyenXe}`;
 }
 
 // Format price

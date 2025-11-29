@@ -495,7 +495,7 @@ function loadPage(page) {
       Toast.info("Chức năng Quản lý Tuyến đang được phát triển");
       break;
     case "bookings":
-      Toast.info("Chức năng Quản lý Vé đang được phát triển");
+      loadBookingManagementPage();
       break;
     case "users":
       loadUserManagementPage();
@@ -503,8 +503,9 @@ function loadPage(page) {
     case "seats":
       Toast.info("Chức năng Quản lý Ghế đang được phát triển");
       break;
+    case "statistics":
     case "revenue":
-      Toast.info("Chức năng Báo cáo Doanh thu đang được phát triển");
+      loadStatisticsPage();
       break;
     case "settings":
       Toast.info("Chức năng Cài đặt đang được phát triển");
@@ -1494,3 +1495,1920 @@ window.editEmployee = editEmployee;
 window.deleteEmployee = deleteEmployee;
 window.closeUserModal = closeUserModal;
 window.saveUser = saveUser;
+
+// ===================================
+// BOOKING MANAGEMENT MODULE
+// ===================================
+
+// Booking Management State
+let currentBookingTab = 'all';
+let bookingsData = { all: [], cancelRequests: [] };
+let currentCancelRequest = null;
+
+// ===================================
+// Load Booking Management Page
+// ===================================
+function loadBookingManagementPage() {
+  const content = document.querySelector('.content');
+  
+  content.innerHTML = `
+    <div class="bookings-management-page">
+      <!-- Page Header -->
+      <div class="bookings-page-header">
+        <div class="page-title-section">
+          <h2><i class="fas fa-ticket-alt"></i> Quản lý Vé xe</h2>
+          <p class="page-subtitle">Quản lý đặt vé và xử lý yêu cầu hủy vé</p>
+        </div>
+        
+        <!-- Tab Selector -->
+        <div class="booking-tabs-selector">
+          <button class="booking-tab-btn active" data-tab="all">
+            <i class="fas fa-list"></i>
+            <span>Tất cả vé</span>
+          </button>
+          <button class="booking-tab-btn" data-tab="cancel-requests">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Yêu cầu hủy</span>
+            <span class="cancel-badge" id="cancelBadge">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="booking-stats" id="bookingStats"></div>
+
+      <!-- Filters -->
+      <div class="booking-controls">
+        <div class="booking-search">
+          <i class="fas fa-search"></i>
+          <input type="text" id="bookingSearchInput" placeholder="Tìm kiếm theo mã vé, tên khách hàng...">
+        </div>
+        <select id="bookingStatusFilter" class="status-filter">
+          <option value="">Tất cả trạng thái</option>
+          <option value="paid">Đã thanh toán</option>
+          <option value="cancel_pending">Chờ duyệt hủy</option>
+          <option value="cancelled">Đã hủy</option>
+          <option value="refunded">Đã hoàn tiền</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="bookings-table-wrapper">
+        <div class="bookings-table-header">
+          <i class="fas fa-table"></i>
+          <span id="bookingTableTitle">Danh sách vé</span>
+        </div>
+        <table class="bookings-table">
+          <thead id="bookingTableHead"></thead>
+          <tbody id="bookingTableBody">
+            <tr class="loading-row">
+              <td colspan="8">
+                <i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Cancel Request Detail Modal -->
+    <div class="cancel-detail-modal" id="cancelDetailModal">
+      <div class="cancel-detail-content">
+        <div class="cancel-detail-header">
+          <h3><i class="fas fa-file-alt"></i> Chi tiết yêu cầu hủy vé</h3>
+          <button class="modal-close-btn" onclick="closeCancelDetailModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="cancel-detail-body" id="cancelDetailBody"></div>
+        <div class="cancel-detail-footer" id="cancelDetailFooter"></div>
+      </div>
+    </div>
+
+    <style>
+      /* Booking Management Styles */
+      .bookings-management-page { padding: 0; }
+      
+      .bookings-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      
+      .booking-tabs-selector {
+        display: flex;
+        gap: 10px;
+      }
+      
+      .booking-tab-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+      
+      .booking-tab-btn.active {
+        background: var(--primary-gradient);
+        border-color: transparent;
+        color: white;
+      }
+      
+      .booking-tab-btn:not(.active):hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+      
+      .cancel-badge {
+        background: #f44336;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+        min-width: 22px;
+        text-align: center;
+      }
+      
+      .booking-tab-btn.active .cancel-badge {
+        background: white;
+        color: #f44336;
+      }
+      
+      .booking-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+      }
+      
+      .booking-stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      
+      .booking-stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: white;
+      }
+      
+      .booking-stat-icon.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+      .booking-stat-icon.paid { background: var(--green-gradient); }
+      .booking-stat-icon.pending { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+      .booking-stat-icon.revenue { background: var(--orange-gradient); }
+      
+      .booking-stat-info h4 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+      }
+      
+      .booking-stat-info p {
+        font-size: 13px;
+        color: #666;
+        margin: 0;
+      }
+      
+      .booking-controls {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+      }
+      
+      .booking-search {
+        flex: 1;
+        min-width: 300px;
+        position: relative;
+      }
+      
+      .booking-search input {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      
+      .booking-search input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+      }
+      
+      .booking-search i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+      }
+      
+      .status-filter {
+        padding: 12px 20px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      
+      .bookings-table-wrapper {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        overflow: hidden;
+      }
+      
+      .bookings-table-header {
+        padding: 20px 25px;
+        background: var(--primary-gradient);
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      
+      .bookings-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      .bookings-table thead { background: #f8fafc; }
+      
+      .bookings-table th {
+        padding: 15px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: #475569;
+        font-size: 13px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #e2e8f0;
+      }
+      
+      .bookings-table td {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 14px;
+        color: #334155;
+      }
+      
+      .bookings-table tbody tr:hover { background: #f8fafc; }
+      
+      .booking-status-badge {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .booking-status-badge.paid { background: rgba(56, 239, 125, 0.15); color: #11998e; }
+      .booking-status-badge.cancel_pending { background: rgba(156, 39, 176, 0.15); color: #9c27b0; }
+      .booking-status-badge.cancelled { background: rgba(244, 67, 54, 0.15); color: #f44336; }
+      .booking-status-badge.refunded { background: rgba(156, 39, 176, 0.15); color: #9c27b0; }
+      
+      .btn-view-cancel {
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-view-cancel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+      }
+      
+      /* Cancel Request Table */
+      .cancel-reason-preview {
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .cancel-request-status {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      
+      .cancel-request-status.pending { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
+      .cancel-request-status.approved { background: rgba(76, 175, 80, 0.15); color: #4caf50; }
+      .cancel-request-status.rejected { background: rgba(244, 67, 54, 0.15); color: #f44336; }
+      
+      /* Cancel Detail Modal */
+      .cancel-detail-modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .cancel-detail-modal.active { display: flex; }
+      
+      .cancel-detail-content {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 700px;
+        max-height: 90vh;
+        overflow: hidden;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+        animation: modalSlideIn 0.3s ease;
+      }
+      
+      .cancel-detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+        color: white;
+      }
+      
+      .cancel-detail-header h3 {
+        margin: 0;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .cancel-detail-body {
+        padding: 24px;
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+      
+      .detail-section {
+        margin-bottom: 24px;
+      }
+      
+      .detail-section h4 {
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .detail-section h4 i { color: var(--primary-color); }
+      
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .detail-item label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 4px;
+      }
+      
+      .detail-item span {
+        font-size: 15px;
+        font-weight: 600;
+        color: #333;
+      }
+      
+      .reason-box {
+        background: #fff3e0;
+        border: 1px solid #ffcc80;
+        border-radius: 10px;
+        padding: 16px;
+      }
+      
+      .reason-box h5 {
+        margin: 0 0 8px 0;
+        color: #e65100;
+        font-size: 14px;
+      }
+      
+      .reason-box p {
+        margin: 0;
+        color: #555;
+        line-height: 1.6;
+      }
+      
+      .refund-info {
+        background: #e8f5e9;
+        border: 1px solid #a5d6a7;
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+      }
+      
+      .refund-info h5 {
+        margin: 0 0 8px 0;
+        color: #2e7d32;
+      }
+      
+      .refund-info .amount {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1b5e20;
+      }
+      
+      .refund-info .percent {
+        font-size: 14px;
+        color: #666;
+      }
+      
+      .cancel-detail-footer {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding: 20px 24px;
+        border-top: 2px solid #f0f0f0;
+        background: #fafafa;
+      }
+      
+      .btn-approve {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-approve:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+      }
+      
+      .btn-reject {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-reject:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+      }
+      
+      .btn-close-modal {
+        padding: 12px 24px;
+        background: #e0e0e0;
+        color: #333;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      .btn-close-modal:hover { background: #d0d0d0; }
+    </style>
+  `;
+
+  // Setup event listeners
+  setupBookingManagementEvents();
+  
+  // Load initial data
+  loadAllBookings();
+  loadCancelRequestsCount();
+}
+
+// ===================================
+// Setup Booking Management Events
+// ===================================
+function setupBookingManagementEvents() {
+  // Tab switching
+  document.querySelectorAll('.booking-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.booking-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      currentBookingTab = btn.getAttribute('data-tab');
+      
+      if (currentBookingTab === 'all') {
+        loadAllBookings();
+      } else {
+        loadCancelRequests();
+      }
+    });
+  });
+
+  // Search
+  const searchInput = document.getElementById('bookingSearchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => filterBookings(e.target.value));
+  }
+
+  // Status filter
+  const statusFilter = document.getElementById('bookingStatusFilter');
+  if (statusFilter) {
+    statusFilter.addEventListener('change', () => {
+      if (currentBookingTab === 'all') {
+        loadAllBookings(statusFilter.value);
+      }
+    });
+  }
+}
+
+// ===================================
+// Load All Bookings
+// ===================================
+async function loadAllBookings(statusFilter = '') {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    let url = `${API_BASE_URL}/admin/bookings/all?limit=50`;
+    if (statusFilter) url += `&status=${statusFilter}`;
+    
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load bookings');
+    
+    const data = await response.json();
+    bookingsData.all = data.bookings || [];
+    
+    // Load stats
+    loadBookingStats();
+    
+    // Render table
+    renderBookingsTable(bookingsData.all);
+  } catch (error) {
+    console.error('Error loading bookings:', error);
+    Toast.error('Không thể tải danh sách vé');
+    renderEmptyBookingTable('Không thể tải dữ liệu');
+  }
+}
+
+// ===================================
+// Load Cancel Requests
+// ===================================
+async function loadCancelRequests(statusFilter = '') {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    let url = `${API_BASE_URL}/admin/bookings/cancel-requests?limit=50`;
+    if (statusFilter) url += `&status=${statusFilter}`;
+    
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load cancel requests');
+    
+    const data = await response.json();
+    bookingsData.cancelRequests = data.requests || [];
+    
+    // Update badge
+    const badge = document.getElementById('cancelBadge');
+    if (badge) badge.textContent = data.pending_count || 0;
+    
+    // Render table
+    renderCancelRequestsTable(bookingsData.cancelRequests);
+  } catch (error) {
+    console.error('Error loading cancel requests:', error);
+    Toast.error('Không thể tải danh sách yêu cầu hủy');
+    renderEmptyBookingTable('Không thể tải dữ liệu');
+  }
+}
+
+// ===================================
+// Load Cancel Requests Count (for badge)
+// ===================================
+async function loadCancelRequestsCount() {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/bookings/cancel-requests/pending/count`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const badge = document.getElementById('cancelBadge');
+      if (badge) badge.textContent = data.count || 0;
+    }
+  } catch (error) {
+    console.error('Error loading cancel count:', error);
+  }
+}
+
+// ===================================
+// Load Booking Stats
+// ===================================
+async function loadBookingStats() {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/bookings/stats`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load stats');
+    
+    const stats = await response.json();
+    renderBookingStats(stats);
+  } catch (error) {
+    console.error('Error loading booking stats:', error);
+  }
+}
+
+// ===================================
+// Render Booking Stats
+// ===================================
+function renderBookingStats(stats) {
+  const container = document.getElementById('bookingStats');
+  if (!container) return;
+  
+  container.innerHTML = `
+    <div class="booking-stat-card">
+      <div class="booking-stat-icon total">
+        <i class="fas fa-ticket-alt"></i>
+      </div>
+      <div class="booking-stat-info">
+        <h4>${stats.total_bookings || 0}</h4>
+        <p>Tổng số vé</p>
+      </div>
+    </div>
+    <div class="booking-stat-card">
+      <div class="booking-stat-icon paid">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="booking-stat-info">
+        <h4>${stats.paid_bookings || 0}</h4>
+        <p>Đã thanh toán</p>
+      </div>
+    </div>
+    <div class="booking-stat-card">
+      <div class="booking-stat-icon pending">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="booking-stat-info">
+        <h4>${stats.cancel_pending || 0}</h4>
+        <p>Chờ duyệt hủy</p>
+      </div>
+    </div>
+    <div class="booking-stat-card">
+      <div class="booking-stat-icon revenue">
+        <i class="fas fa-money-bill-wave"></i>
+      </div>
+      <div class="booking-stat-info">
+        <h4>${formatCurrency(stats.total_revenue || 0)}</h4>
+        <p>Tổng doanh thu</p>
+      </div>
+    </div>
+  `;
+}
+
+// ===================================
+// Render Bookings Table
+// ===================================
+function renderBookingsTable(bookings) {
+  const tableHead = document.getElementById('bookingTableHead');
+  const tableBody = document.getElementById('bookingTableBody');
+  const tableTitle = document.getElementById('bookingTableTitle');
+  
+  if (!tableHead || !tableBody) return;
+  
+  tableTitle.textContent = 'Danh sách vé';
+  
+  tableHead.innerHTML = `
+    <tr>
+      <th>Mã vé</th>
+      <th>Khách hàng</th>
+      <th>Tuyến đường</th>
+      <th>Ngày đi</th>
+      <th>Ghế</th>
+      <th>Tổng tiền</th>
+      <th>Trạng thái</th>
+      <th>Thao tác</th>
+    </tr>
+  `;
+
+  if (!bookings || bookings.length === 0) {
+    renderEmptyBookingTable('Chưa có vé nào');
+    return;
+  }
+
+  tableBody.innerHTML = bookings.map(booking => {
+    const route = booking.routeInfo 
+      ? `${booking.routeInfo.diemDi} → ${booking.routeInfo.diemDen}` 
+      : booking.maTuyenXe || 'N/A';
+    const customer = booking.customerInfo?.hoTen || 'N/A';
+    const seats = Array.isArray(booking.soGheNgoi) ? booking.soGheNgoi.join(', ') : booking.soGheNgoi;
+    const statusLabel = getBookingStatusLabel(booking.trangThai);
+    
+    return `
+      <tr>
+        <td><strong>${booking.maDatVe}</strong></td>
+        <td>${customer}</td>
+        <td>${route}</td>
+        <td>${booking.ngayDi} ${booking.gioDi || ''}</td>
+        <td>${seats}</td>
+        <td><strong>${formatCurrency(booking.tongTien)}</strong></td>
+        <td><span class="booking-status-badge ${booking.trangThai}">${statusLabel}</span></td>
+        <td>
+          ${booking.trangThai === 'cancel_pending' ? `
+            <button class="btn-view-cancel" onclick="viewCancelRequest('${booking.maDatVe}')">
+              <i class="fas fa-eye"></i> Xem yêu cầu
+            </button>
+          ` : '-'}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ===================================
+// Render Cancel Requests Table
+// ===================================
+function renderCancelRequestsTable(requests) {
+  const tableHead = document.getElementById('bookingTableHead');
+  const tableBody = document.getElementById('bookingTableBody');
+  const tableTitle = document.getElementById('bookingTableTitle');
+  
+  if (!tableHead || !tableBody) return;
+  
+  tableTitle.textContent = 'Danh sách yêu cầu hủy vé';
+  
+  tableHead.innerHTML = `
+    <tr>
+      <th>Mã YC</th>
+      <th>Mã vé</th>
+      <th>Khách hàng</th>
+      <th>Tuyến</th>
+      <th>Lý do hủy</th>
+      <th>Tiền hoàn</th>
+      <th>Trạng thái</th>
+      <th>Thao tác</th>
+    </tr>
+  `;
+
+  if (!requests || requests.length === 0) {
+    renderEmptyBookingTable('Không có yêu cầu hủy vé');
+    return;
+  }
+
+  tableBody.innerHTML = requests.map(req => {
+    const route = req.routeInfo 
+      ? `${req.routeInfo.diemDi} → ${req.routeInfo.diemDen}` 
+      : req.maTuyenXe || 'N/A';
+    const statusLabel = getCancelStatusLabel(req.trangThai);
+    
+    return `
+      <tr>
+        <td><strong>${req.maYeuCauHuy}</strong></td>
+        <td>${req.maDatVe}</td>
+        <td>${req.tenKH || 'N/A'}</td>
+        <td>${route}</td>
+        <td class="cancel-reason-preview" title="${req.lyDoHuyText}">${req.lyDoHuyText}</td>
+        <td><strong>${formatCurrency(req.tienHoanDuKien)}</strong></td>
+        <td><span class="cancel-request-status ${req.trangThai}">${statusLabel}</span></td>
+        <td>
+          <button class="btn-view-cancel" onclick="openCancelDetailModal('${req.maYeuCauHuy}')">
+            <i class="fas fa-eye"></i> Chi tiết
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ===================================
+// View Cancel Request from Booking
+// ===================================
+async function viewCancelRequest(maDatVe) {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/bookings/cancel-requests?limit=100`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load');
+    
+    const data = await response.json();
+    const request = data.requests.find(r => r.maDatVe === maDatVe);
+    
+    if (request) {
+      openCancelDetailModal(request.maYeuCauHuy);
+    } else {
+      Toast.error('Không tìm thấy yêu cầu hủy');
+    }
+  } catch (error) {
+    console.error(error);
+    Toast.error('Không thể tải thông tin yêu cầu hủy');
+  }
+}
+
+// ===================================
+// Open Cancel Detail Modal
+// ===================================
+async function openCancelDetailModal(maYeuCauHuy) {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/bookings/cancel-requests/${maYeuCauHuy}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load cancel request detail');
+    
+    currentCancelRequest = await response.json();
+    
+    const route = currentCancelRequest.routeInfo 
+      ? `${currentCancelRequest.routeInfo.diemDi} → ${currentCancelRequest.routeInfo.diemDen}` 
+      : 'N/A';
+    const seats = Array.isArray(currentCancelRequest.soGheNgoi) 
+      ? currentCancelRequest.soGheNgoi.join(', ') 
+      : currentCancelRequest.soGheNgoi;
+    
+    const body = document.getElementById('cancelDetailBody');
+    body.innerHTML = `
+      <div class="detail-section">
+        <h4><i class="fas fa-user"></i> Thông tin khách hàng</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Họ tên</label>
+            <span>${currentCancelRequest.tenKH || 'N/A'}</span>
+          </div>
+          <div class="detail-item">
+            <label>Email</label>
+            <span>${currentCancelRequest.emailKH || 'N/A'}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="detail-section">
+        <h4><i class="fas fa-ticket-alt"></i> Thông tin vé</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Mã vé</label>
+            <span>${currentCancelRequest.maDatVe}</span>
+          </div>
+          <div class="detail-item">
+            <label>Tuyến đường</label>
+            <span>${route}</span>
+          </div>
+          <div class="detail-item">
+            <label>Ngày khởi hành</label>
+            <span>${currentCancelRequest.ngayDi} ${currentCancelRequest.gioDi || ''}</span>
+          </div>
+          <div class="detail-item">
+            <label>Ghế</label>
+            <span>${seats}</span>
+          </div>
+          <div class="detail-item">
+            <label>Tổng tiền vé</label>
+            <span>${formatCurrency(currentCancelRequest.tongTien)}</span>
+          </div>
+          <div class="detail-item">
+            <label>Ngày yêu cầu hủy</label>
+            <span>${new Date(currentCancelRequest.ngayTao).toLocaleString('vi-VN')}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="detail-section">
+        <h4><i class="fas fa-exclamation-circle"></i> Lý do hủy vé</h4>
+        <div class="reason-box">
+          <h5>📝 ${currentCancelRequest.lyDoHuyText}</h5>
+          ${currentCancelRequest.ghiChu ? `<p><strong>Ghi chú:</strong> ${currentCancelRequest.ghiChu}</p>` : ''}
+        </div>
+      </div>
+      
+      <div class="detail-section">
+        <h4><i class="fas fa-money-bill-wave"></i> Thông tin hoàn tiền</h4>
+        <div class="refund-info">
+          <h5>💵 Số tiền hoàn dự kiến</h5>
+          <div class="amount">${formatCurrency(currentCancelRequest.tienHoanDuKien)}</div>
+          <div class="percent">(${currentCancelRequest.phanTramHoan}% giá vé)</div>
+        </div>
+      </div>
+      
+      ${currentCancelRequest.trangThai !== 'pending' ? `
+        <div class="detail-section">
+          <h4><i class="fas fa-info-circle"></i> Kết quả xử lý</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>Trạng thái</label>
+              <span class="cancel-request-status ${currentCancelRequest.trangThai}">${getCancelStatusLabel(currentCancelRequest.trangThai)}</span>
+            </div>
+            <div class="detail-item">
+              <label>Người xử lý</label>
+              <span>${currentCancelRequest.nguoiXuLy || 'N/A'}</span>
+            </div>
+            ${currentCancelRequest.ngayXuLy ? `
+              <div class="detail-item">
+                <label>Ngày xử lý</label>
+                <span>${new Date(currentCancelRequest.ngayXuLy).toLocaleString('vi-VN')}</span>
+              </div>
+            ` : ''}
+            ${currentCancelRequest.lyDoTuChoi ? `
+              <div class="detail-item" style="grid-column: span 2;">
+                <label>Lý do từ chối</label>
+                <span style="color: #f44336;">${currentCancelRequest.lyDoTuChoi}</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      ` : ''}
+    `;
+    
+    // Footer buttons
+    const footer = document.getElementById('cancelDetailFooter');
+    if (currentCancelRequest.trangThai === 'pending') {
+      footer.innerHTML = `
+        <button class="btn-close-modal" onclick="closeCancelDetailModal()">Đóng</button>
+        <button class="btn-reject" onclick="rejectCancelRequest('${maYeuCauHuy}')">
+          <i class="fas fa-times"></i> Từ chối
+        </button>
+        <button class="btn-approve" onclick="approveCancelRequest('${maYeuCauHuy}')">
+          <i class="fas fa-check"></i> Duyệt hủy vé
+        </button>
+      `;
+    } else {
+      footer.innerHTML = `
+        <button class="btn-close-modal" onclick="closeCancelDetailModal()">Đóng</button>
+      `;
+    }
+    
+    document.getElementById('cancelDetailModal').classList.add('active');
+    
+  } catch (error) {
+    console.error(error);
+    Toast.error('Không thể tải chi tiết yêu cầu hủy');
+  }
+}
+
+// ===================================
+// Close Cancel Detail Modal
+// ===================================
+function closeCancelDetailModal() {
+  document.getElementById('cancelDetailModal').classList.remove('active');
+  currentCancelRequest = null;
+}
+
+// ===================================
+// Approve Cancel Request
+// ===================================
+async function approveCancelRequest(maYeuCauHuy) {
+  const confirmed = await Modal.confirm(
+    `Bạn có chắc chắn muốn DUYỆT yêu cầu hủy vé này?\n\nSố tiền hoàn: ${formatCurrency(currentCancelRequest.tienHoanDuKien)}`,
+    'Xác nhận duyệt hủy vé',
+    'warning'
+  );
+  
+  if (!confirmed) return;
+  
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/bookings/cancel-requests/${maYeuCauHuy}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action: 'approve' })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to approve');
+    }
+    
+    const result = await response.json();
+    Toast.success(result.message);
+    closeCancelDetailModal();
+    
+    // Reload data
+    if (currentBookingTab === 'all') {
+      loadAllBookings();
+    } else {
+      loadCancelRequests();
+    }
+    loadCancelRequestsCount();
+    
+  } catch (error) {
+    console.error(error);
+    Toast.error(error.message || 'Không thể duyệt yêu cầu hủy');
+  }
+}
+
+// ===================================
+// Reject Cancel Request
+// ===================================
+async function rejectCancelRequest(maYeuCauHuy) {
+  const reason = prompt('Nhập lý do từ chối yêu cầu hủy vé:');
+  
+  if (reason === null) return; // User cancelled
+  if (!reason.trim()) {
+    Toast.warning('Vui lòng nhập lý do từ chối');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/admin/bookings/cancel-requests/${maYeuCauHuy}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        action: 'reject',
+        lyDoTuChoi: reason.trim()
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to reject');
+    }
+    
+    const result = await response.json();
+    Toast.success(result.message);
+    closeCancelDetailModal();
+    
+    // Reload data
+    if (currentBookingTab === 'all') {
+      loadAllBookings();
+    } else {
+      loadCancelRequests();
+    }
+    loadCancelRequestsCount();
+    
+  } catch (error) {
+    console.error(error);
+    Toast.error(error.message || 'Không thể từ chối yêu cầu hủy');
+  }
+}
+
+// ===================================
+// Helper Functions
+// ===================================
+function getBookingStatusLabel(status) {
+  const labels = {
+    'paid': 'Đã thanh toán',
+    'cancel_pending': 'Chờ duyệt hủy',
+    'cancelled': 'Đã hủy',
+    'refunded': 'Đã hoàn tiền'
+  };
+  return labels[status] || status;
+}
+
+function getCancelStatusLabel(status) {
+  const labels = {
+    'pending': 'Chờ xử lý',
+    'approved': 'Đã duyệt',
+    'rejected': 'Từ chối'
+  };
+  return labels[status] || status;
+}
+
+function renderEmptyBookingTable(message) {
+  const tableBody = document.getElementById('bookingTableBody');
+  if (!tableBody) return;
+  
+  tableBody.innerHTML = `
+    <tr class="empty-row">
+      <td colspan="8">
+        <i class="fas fa-inbox"></i> ${message}
+      </td>
+    </tr>
+  `;
+}
+
+function filterBookings(searchTerm) {
+  const lowerSearch = searchTerm.toLowerCase();
+  
+  if (currentBookingTab === 'all') {
+    const filtered = bookingsData.all.filter(b => 
+      (b.maDatVe || '').toLowerCase().includes(lowerSearch) ||
+      (b.customerInfo?.hoTen || '').toLowerCase().includes(lowerSearch) ||
+      (b.routeInfo?.diemDi || '').toLowerCase().includes(lowerSearch) ||
+      (b.routeInfo?.diemDen || '').toLowerCase().includes(lowerSearch)
+    );
+    renderBookingsTable(filtered);
+  } else {
+    const filtered = bookingsData.cancelRequests.filter(r => 
+      (r.maYeuCauHuy || '').toLowerCase().includes(lowerSearch) ||
+      (r.maDatVe || '').toLowerCase().includes(lowerSearch) ||
+      (r.tenKH || '').toLowerCase().includes(lowerSearch) ||
+      (r.lyDoHuyText || '').toLowerCase().includes(lowerSearch)
+    );
+    renderCancelRequestsTable(filtered);
+  }
+}
+
+// Make functions globally accessible
+window.viewCancelRequest = viewCancelRequest;
+window.openCancelDetailModal = openCancelDetailModal;
+window.closeCancelDetailModal = closeCancelDetailModal;
+window.approveCancelRequest = approveCancelRequest;
+window.rejectCancelRequest = rejectCancelRequest;
+
+
+// ===================================
+// STATISTICS MODULE
+// ===================================
+
+let revenueLineChart = null;
+let routesPieChart = null;
+let currentStatsPeriod = 'month';
+
+// ===================================
+// Load Statistics Page
+// ===================================
+function loadStatisticsPage() {
+  const content = document.querySelector('.content');
+  
+  content.innerHTML = `
+    <div class="statistics-page">
+      <!-- Page Header -->
+      <div class="stats-page-header">
+        <div class="page-title-section">
+          <h2><i class="fas fa-chart-bar"></i> Thống kê & Báo cáo</h2>
+          <p class="page-subtitle">Phân tích doanh thu và hiệu suất kinh doanh</p>
+        </div>
+        
+        <!-- Period Selector -->
+        <div class="period-selector">
+          <button class="period-btn" data-period="today">Hôm nay</button>
+          <button class="period-btn" data-period="week">Tuần này</button>
+          <button class="period-btn active" data-period="month">Tháng này</button>
+          <button class="period-btn" data-period="year">Năm nay</button>
+        </div>
+      </div>
+
+      <!-- Overview Stats -->
+      <div class="stats-overview-grid" id="statsOverview">
+        <div class="stats-card loading">
+          <div class="stats-card-icon revenue"><i class="fas fa-money-bill-wave"></i></div>
+          <div class="stats-card-content">
+            <div class="stats-card-value" id="totalRevenue">--</div>
+            <div class="stats-card-label">Doanh thu</div>
+          </div>
+        </div>
+        <div class="stats-card loading">
+          <div class="stats-card-icon bookings"><i class="fas fa-ticket-alt"></i></div>
+          <div class="stats-card-content">
+            <div class="stats-card-value" id="totalBookings">--</div>
+            <div class="stats-card-label">Đơn đặt vé</div>
+          </div>
+        </div>
+        <div class="stats-card loading">
+          <div class="stats-card-icon tickets"><i class="fas fa-chair"></i></div>
+          <div class="stats-card-content">
+            <div class="stats-card-value" id="totalTickets">--</div>
+            <div class="stats-card-label">Vé đã bán</div>
+          </div>
+        </div>
+        <div class="stats-card loading">
+          <div class="stats-card-icon average"><i class="fas fa-calculator"></i></div>
+          <div class="stats-card-content">
+            <div class="stats-card-value" id="avgPrice">--</div>
+            <div class="stats-card-label">Giá vé TB</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-row">
+        <!-- Revenue Chart -->
+        <div class="chart-container">
+          <div class="chart-header">
+            <h3><i class="fas fa-chart-line"></i> Biểu đồ doanh thu</h3>
+            <select id="chartDaysSelect">
+              <option value="7">7 ngày</option>
+              <option value="14">14 ngày</option>
+              <option value="30" selected>30 ngày</option>
+              <option value="90">90 ngày</option>
+            </select>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="revenueLineChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Routes Pie Chart -->
+        <div class="chart-container small">
+          <div class="chart-header">
+            <h3><i class="fas fa-route"></i> Tuyến phổ biến</h3>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="routesPieChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Popular Routes Table -->
+      <div class="stats-table-container">
+        <div class="stats-table-header">
+          <h3><i class="fas fa-trophy"></i> Top tuyến xe đặt nhiều nhất</h3>
+        </div>
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Hạng</th>
+              <th>Tuyến đường</th>
+              <th>Số đơn</th>
+              <th>Số vé</th>
+              <th>Doanh thu</th>
+              <th>Tỷ lệ</th>
+            </tr>
+          </thead>
+          <tbody id="popularRoutesTable">
+            <tr><td colspan="6" class="loading-cell"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Top Customers -->
+      <div class="stats-table-container">
+        <div class="stats-table-header">
+          <h3><i class="fas fa-users"></i> Top khách hàng VIP</h3>
+        </div>
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Hạng</th>
+              <th>Khách hàng</th>
+              <th>Email</th>
+              <th>Số đơn</th>
+              <th>Số vé</th>
+              <th>Tổng chi tiêu</th>
+            </tr>
+          </thead>
+          <tbody id="topCustomersTable">
+            <tr><td colspan="6" class="loading-cell"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <style>
+      /* Statistics Page Styles */
+      .statistics-page { padding: 0; }
+      
+      .stats-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      
+      .period-selector {
+        display: flex;
+        gap: 8px;
+        background: white;
+        padding: 6px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      }
+      
+      .period-btn {
+        padding: 10px 20px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #666;
+      }
+      
+      .period-btn:hover { background: #f5f5f5; color: #333; }
+      
+      .period-btn.active {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+      }
+      
+      /* Stats Overview Grid */
+      .stats-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      
+      @media (max-width: 1200px) {
+        .stats-overview-grid { grid-template-columns: repeat(2, 1fr); }
+      }
+      
+      @media (max-width: 600px) {
+        .stats-overview-grid { grid-template-columns: 1fr; }
+      }
+      
+      .stats-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+      }
+      
+      .stats-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      }
+      
+      .stats-card.loading .stats-card-value {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        color: transparent;
+        border-radius: 4px;
+      }
+      
+      @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+      
+      .stats-card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+        flex-shrink: 0;
+      }
+      
+      .stats-card-icon.revenue { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+      .stats-card-icon.bookings { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+      .stats-card-icon.tickets { background: var(--primary-gradient); }
+      .stats-card-icon.average { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+      
+      .stats-card-content { flex: 1; }
+      
+      .stats-card-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 4px;
+      }
+      
+      .stats-card-label {
+        font-size: 14px;
+        color: #64748b;
+      }
+      
+      /* Charts Row */
+      .charts-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      
+      @media (max-width: 1000px) {
+        .charts-row { grid-template-columns: 1fr; }
+      }
+      
+      .chart-container {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      }
+      
+      .chart-container.small { max-height: 400px; }
+      
+      .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      
+      .chart-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .chart-header h3 i { color: var(--primary-color); }
+      
+      .chart-header select {
+        padding: 8px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      
+      .chart-wrapper {
+        position: relative;
+        height: 300px;
+      }
+      
+      /* Stats Tables */
+      .stats-table-container {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+      }
+      
+      .stats-table-header {
+        margin-bottom: 20px;
+      }
+      
+      .stats-table-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .stats-table-header h3 i { color: var(--primary-color); }
+      
+      .stats-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      .stats-table thead { background: #f8fafc; }
+      
+      .stats-table th {
+        padding: 14px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: #475569;
+        font-size: 13px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #e2e8f0;
+      }
+      
+      .stats-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 14px;
+        color: #334155;
+      }
+      
+      .stats-table tbody tr:hover { background: #f8fafc; }
+      
+      .loading-cell {
+        text-align: center;
+        padding: 40px !important;
+        color: #94a3b8;
+      }
+      
+      .rank-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      
+      .rank-badge.gold { background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%); color: white; }
+      .rank-badge.silver { background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%); color: white; }
+      .rank-badge.bronze { background: linear-gradient(135deg, #c9934e 0%, #8B4513 100%); color: white; }
+      .rank-badge.normal { background: #e2e8f0; color: #475569; }
+      
+      .route-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+      
+      .route-arrow { color: var(--primary-color); }
+      
+      .percentage-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .bar-container {
+        flex: 1;
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      
+      .bar-fill {
+        height: 100%;
+        background: var(--primary-gradient);
+        border-radius: 4px;
+        transition: width 0.5s ease;
+      }
+      
+      .bar-value {
+        font-weight: 600;
+        color: var(--primary-color);
+        min-width: 45px;
+        text-align: right;
+      }
+    </style>
+  `;
+
+  // Setup events
+  setupStatisticsEvents();
+  
+  // Load data
+  loadStatisticsData();
+}
+
+// ===================================
+// Setup Statistics Events
+// ===================================
+function setupStatisticsEvents() {
+  // Period buttons
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentStatsPeriod = btn.getAttribute('data-period');
+      loadStatisticsData();
+    });
+  });
+
+  // Chart days select
+  const chartDaysSelect = document.getElementById('chartDaysSelect');
+  if (chartDaysSelect) {
+    chartDaysSelect.addEventListener('change', () => {
+      loadRevenueChart(parseInt(chartDaysSelect.value));
+    });
+  }
+}
+
+// ===================================
+// Load Statistics Data
+// ===================================
+async function loadStatisticsData() {
+  // Show loading state
+  document.querySelectorAll('.stats-card').forEach(card => card.classList.add('loading'));
+  
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    
+    // Load revenue stats for selected period
+    const revenueRes = await fetch(`${API_BASE_URL}/statistics/revenue?period=${currentStatsPeriod}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (revenueRes.ok) {
+      const data = await revenueRes.json();
+      updateOverviewStats(data.stats);
+    }
+    
+    // Load charts
+    loadRevenueChart(30);
+    loadPopularRoutesChart();
+    
+    // Load tables
+    loadPopularRoutesTable();
+    loadTopCustomersTable();
+    
+  } catch (error) {
+    console.error('Error loading statistics:', error);
+    Toast.error('Không thể tải dữ liệu thống kê');
+  }
+}
+
+// ===================================
+// Update Overview Stats
+// ===================================
+function updateOverviewStats(stats) {
+  document.querySelectorAll('.stats-card').forEach(card => card.classList.remove('loading'));
+  
+  const totalRevenueEl = document.getElementById('totalRevenue');
+  const totalBookingsEl = document.getElementById('totalBookings');
+  const totalTicketsEl = document.getElementById('totalTickets');
+  const avgPriceEl = document.getElementById('avgPrice');
+  
+  if (totalRevenueEl) totalRevenueEl.textContent = formatCurrency(stats.total_revenue || 0);
+  if (totalBookingsEl) totalBookingsEl.textContent = (stats.total_bookings || 0).toLocaleString();
+  if (totalTicketsEl) totalTicketsEl.textContent = (stats.total_tickets || 0).toLocaleString();
+  if (avgPriceEl) avgPriceEl.textContent = formatCurrency(stats.average_ticket_price || 0);
+}
+
+// ===================================
+// Load Revenue Chart
+// ===================================
+async function loadRevenueChart(days) {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/statistics/revenue/daily?days=${days}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load chart data');
+    
+    const data = await response.json();
+    
+    const labels = data.daily_data.map(d => {
+      const date = new Date(d.date);
+      return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    });
+    
+    const revenues = data.daily_data.map(d => d.revenue / 1000000); // Convert to millions
+    
+    const ctx = document.getElementById('revenueLineChart');
+    if (!ctx) return;
+    
+    // Destroy existing chart
+    if (revenueLineChart) {
+      revenueLineChart.destroy();
+    }
+    
+    revenueLineChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Doanh thu (triệu đồng)',
+          data: revenues,
+          borderColor: '#FF6600',
+          backgroundColor: 'rgba(255, 102, 0, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: days <= 14 ? 5 : 0,
+          pointBackgroundColor: '#FF6600',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            callbacks: {
+              label: function(context) {
+                return `Doanh thu: ${context.parsed.y.toFixed(2)}M VNĐ`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+            ticks: {
+              callback: function(value) { return value + 'M'; }
+            }
+          },
+          x: {
+            grid: { display: false }
+          }
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error loading revenue chart:', error);
+  }
+}
+
+// ===================================
+// Load Popular Routes Chart
+// ===================================
+async function loadPopularRoutesChart() {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/statistics/routes/popular?period=${currentStatsPeriod}&limit=5`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load routes data');
+    
+    const data = await response.json();
+    
+    const labels = data.routes.map(r => `${r.diemDi} → ${r.diemDen}`);
+    const values = data.routes.map(r => r.total_bookings);
+    
+    const ctx = document.getElementById('routesPieChart');
+    if (!ctx) return;
+    
+    // Destroy existing chart
+    if (routesPieChart) {
+      routesPieChart.destroy();
+    }
+    
+    routesPieChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: [
+            '#FF6600',
+            '#667eea',
+            '#11998e',
+            '#f093fb',
+            '#4facfe'
+          ],
+          borderWidth: 0,
+          hoverOffset: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 15,
+              usePointStyle: true,
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            callbacks: {
+              label: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                return `${context.parsed} đơn (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error loading routes chart:', error);
+  }
+}
+
+// ===================================
+// Load Popular Routes Table
+// ===================================
+async function loadPopularRoutesTable() {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/statistics/routes/popular?period=${currentStatsPeriod}&limit=10`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load routes data');
+    
+    const data = await response.json();
+    const tableBody = document.getElementById('popularRoutesTable');
+    
+    if (!data.routes || data.routes.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="6" class="loading-cell">Chưa có dữ liệu</td></tr>';
+      return;
+    }
+    
+    // Calculate total for percentage
+    const totalBookings = data.routes.reduce((sum, r) => sum + r.total_bookings, 0);
+    
+    tableBody.innerHTML = data.routes.map((route, index) => {
+      const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'normal';
+      const percentage = ((route.total_bookings / totalBookings) * 100).toFixed(1);
+      
+      return `
+        <tr>
+          <td><span class="rank-badge ${rankClass}">${index + 1}</span></td>
+          <td>
+            <div class="route-name">
+              <span>${route.diemDi}</span>
+              <span class="route-arrow">→</span>
+              <span>${route.diemDen}</span>
+            </div>
+          </td>
+          <td><strong>${route.total_bookings}</strong></td>
+          <td>${route.total_tickets}</td>
+          <td><strong>${formatCurrency(route.total_revenue)}</strong></td>
+          <td>
+            <div class="percentage-bar">
+              <div class="bar-container">
+                <div class="bar-fill" style="width: ${percentage}%"></div>
+              </div>
+              <span class="bar-value">${percentage}%</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('Error loading routes table:', error);
+    document.getElementById('popularRoutesTable').innerHTML = 
+      '<tr><td colspan="6" class="loading-cell">Không thể tải dữ liệu</td></tr>';
+  }
+}
+
+// ===================================
+// Load Top Customers Table
+// ===================================
+async function loadTopCustomersTable() {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/statistics/customers/top?period=${currentStatsPeriod}&limit=10`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load customers data');
+    
+    const data = await response.json();
+    const tableBody = document.getElementById('topCustomersTable');
+    
+    if (!data.customers || data.customers.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="6" class="loading-cell">Chưa có dữ liệu</td></tr>';
+      return;
+    }
+    
+    tableBody.innerHTML = data.customers.map((customer, index) => {
+      const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'normal';
+      
+      return `
+        <tr>
+          <td><span class="rank-badge ${rankClass}">${index + 1}</span></td>
+          <td><strong>${customer.hoTen}</strong></td>
+          <td>${customer.email}</td>
+          <td>${customer.total_bookings}</td>
+          <td>${customer.total_tickets}</td>
+          <td><strong>${formatCurrency(customer.total_spent)}</strong></td>
+        </tr>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('Error loading customers table:', error);
+    document.getElementById('topCustomersTable').innerHTML = 
+      '<tr><td colspan="6" class="loading-cell">Không thể tải dữ liệu</td></tr>';
+  }
+}

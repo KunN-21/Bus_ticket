@@ -6,6 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from app.core import redis_client
 from app.config import settings
+from app.utils import format_datetime_hcm
 
 OTP_EXPIRY = 300  # 5 minutes
 
@@ -95,7 +96,7 @@ async def store_registration_step(email: str, step: str, data: dict = None):
     """Store registration progress in Redis"""
     redis = redis_client.get_client()
     key = f"registration:{email}"
-    value = {"step": step, "data": data or {}, "timestamp": datetime.utcnow().isoformat()}
+    value = {"step": step, "data": data or {}, "timestamp": format_datetime_hcm()}
     await redis.setex(key, 3600, str(value))  # 1 hour expiry
 
 async def get_registration_step(email: str) -> dict:
